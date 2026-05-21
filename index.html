@@ -1,0 +1,2524 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSC — Your Best Logistic Partner</title>
+    <link rel="icon" type="image/png" href="assets/img/TSC_page-0001.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ═══════════════ TOKENS ═══════════════ */
+        :root {
+            --accent: #E8FF47;
+            --accent-dark: #C8DF1A;
+            --ease: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        [data-theme="dark"] {
+            --bg: #0C0C0E;
+            --bg2: #131316;
+            --bg3: #1A1A1F;
+            --fg: #F2F2EF;
+            --fg2: rgba(242, 242, 239, 0.55);
+            --fg3: rgba(242, 242, 239, 0.22);
+            --line: rgba(242, 242, 239, 0.08);
+            --line2: rgba(242, 242, 239, 0.14);
+            --card: #18181C;
+            --card-h: #1E1E24;
+            --ghost: rgba(242, 242, 239, 0.06);
+            --ghost-h: rgba(242, 242, 239, 0.1);
+            --ticker: #111113;
+        }
+
+        [data-theme="light"] {
+            --bg: #F7F6F1;
+            --bg2: #EEECEA;
+            --bg3: #E5E3DE;
+            --fg: #0C0C0E;
+            --fg2: rgba(12, 12, 14, 0.55);
+            --fg3: rgba(12, 12, 14, 0.22);
+            --line: rgba(12, 12, 14, 0.07);
+            --line2: rgba(12, 12, 14, 0.13);
+            --card: #FFFFFF;
+            --card-h: #F5F4EF;
+            --ghost: rgba(12, 12, 14, 0.05);
+            --ghost-h: rgba(12, 12, 14, 0.09);
+            --ticker: #EEECEA;
+        }
+
+        /* ═══════════════ RESET ═══════════════ */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            overflow-x: hidden;
+            transition: background .3s, color .3s;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9999;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+            opacity: .5;
+        }
+
+        img {
+            max-width: 100%;
+            display: block;
+        }
+
+        /* ═══════════════ UTILS ═══════════════ */
+        .eyebrow {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: var(--fg2);
+        }
+
+        .adot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            margin-right: 8px;
+            flex-shrink: 0;
+            vertical-align: middle;
+        }
+
+        /* ═══════════════ CONTROLS — Desktop only ═══════════════ */
+        #ctrl {
+            position: fixed;
+            top: 0;
+            right: 0;
+            z-index: 1100;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 16px;
+        }
+
+        /* Hide desktop controls on mobile/tablet — moved into drawer */
+        @media(max-width:1024px) {
+            #ctrl {
+                display: none;
+            }
+        }
+
+        .lang-pill {
+            display: flex;
+            background: var(--ghost);
+            border: 1px solid var(--line2);
+            border-radius: 100px;
+            padding: 3px;
+            gap: 2px;
+            backdrop-filter: blur(16px);
+        }
+
+        .lbtn {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            padding: 6px 12px;
+            border-radius: 100px;
+            border: none;
+            cursor: pointer;
+            background: transparent;
+            color: var(--fg2);
+            transition: all .2s;
+            min-height: 36px;
+        }
+
+        .lbtn.on {
+            background: var(--fg);
+            color: var(--bg);
+        }
+
+        .tbtn {
+            width: 36px;
+            height: 20px;
+            background: var(--ghost);
+            border: 1px solid var(--line2);
+            border-radius: 100px;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            backdrop-filter: blur(16px);
+        }
+
+        .tknob {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent);
+            font-size: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform .3s var(--ease);
+        }
+
+        [data-theme="light"] .tknob {
+            transform: translateX(16px);
+        }
+
+        /* ═══════════════ NAVBAR ═══════════════ */
+        #nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            transition: all .4s;
+        }
+
+        #nav.scrolled {
+            background: color-mix(in srgb, var(--bg) 92%, transparent);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .nav-inner {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 40px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            flex-shrink: 0;
+        }
+
+        .nav-logo img {
+            height: 32px;
+            filter: brightness(0) invert(1);
+        }
+
+        [data-theme="light"] .nav-logo img {
+            filter: brightness(0);
+        }
+
+        .nav-logo .err {
+            display: none;
+            width: 32px;
+            height: 32px;
+            background: #2B5CE6;
+            border-radius: 6px;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 12px;
+            color: #fff;
+        }
+
+        .nav-logotype {
+            font-family: 'Instrument Serif', serif;
+            font-size: 18px;
+            color: var(--fg);
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 0;
+            margin-left: auto;
+        }
+
+        .nav-links a {
+            display: block;
+            padding: 0 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--fg2);
+            text-decoration: none;
+            line-height: 64px;
+            transition: color .2s;
+            white-space: nowrap;
+        }
+
+        .nav-links a:hover {
+            color: var(--fg);
+        }
+
+        .nav-cta-wrap {
+            margin-left: 12px;
+        }
+
+        .btn-nav {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            background: var(--fg);
+            color: var(--bg);
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: opacity .2s, transform .2s;
+            white-space: nowrap;
+        }
+
+        .btn-nav:hover {
+            opacity: .85;
+            transform: translateY(-1px);
+        }
+
+        .hamb {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            padding: 8px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            z-index: 1002;
+            margin-left: auto;
+        }
+
+        .hamb span {
+            width: 22px;
+            height: 1.5px;
+            background: var(--fg);
+            border-radius: 1px;
+            transition: all .3s;
+            display: block;
+        }
+
+        .hamb.x span:nth-child(1) {
+            transform: rotate(45deg) translate(4.5px, 4.5px);
+        }
+
+        .hamb.x span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamb.x span:nth-child(3) {
+            transform: rotate(-45deg) translate(4.5px, -4.5px);
+        }
+
+        /* ═══════════════ DRAWER ═══════════════ */
+        #overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .6);
+            z-index: 998;
+        }
+
+        #drawer {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: min(300px, 85vw);
+            height: 100%;
+            background: var(--bg2);
+            border-left: 1px solid var(--line);
+            z-index: 999;
+            padding: 80px 32px 40px;
+            display: flex;
+            flex-direction: column;
+            transition: right .4s var(--ease);
+        }
+
+        #drawer.open {
+            right: 0;
+        }
+
+        #drawer a {
+            font-size: 17px;
+            font-weight: 500;
+            color: var(--fg2);
+            text-decoration: none;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--line);
+            display: block;
+            transition: color .2s;
+        }
+
+        #drawer a:hover {
+            color: var(--fg);
+        }
+
+        #drawer .btn-nav {
+            margin-top: 24px;
+            justify-content: center;
+            width: 100%;
+        }
+
+        /* Controls inside drawer (mobile only) */
+        .drawer-controls {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            margin-top: auto;
+            padding-top: 28px;
+        }
+
+        @media(max-width:1024px) {
+            .drawer-controls {
+                display: flex;
+            }
+        }
+
+        /* ═══════════════ BUTTONS ═══════════════ */
+        .btn-pri {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 24px;
+            background: var(--accent);
+            color: #0C0C0E;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: 8px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all .2s;
+            white-space: nowrap;
+        }
+
+        .btn-pri:hover {
+            background: var(--accent-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-ghost {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 24px;
+            background: var(--ghost);
+            color: var(--fg);
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 8px;
+            text-decoration: none;
+            border: 1px solid var(--line2);
+            cursor: pointer;
+            transition: all .2s;
+            white-space: nowrap;
+        }
+
+        .btn-ghost:hover {
+            background: var(--ghost-h);
+            transform: translateY(-2px);
+        }
+
+        /* ═══════════════ HERO ═══════════════ */
+        #home {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 40px;
+            align-items: center;
+            gap: 60px;
+            padding-top: 64px;
+        }
+
+        .hero-l {
+            padding: 80px 0 60px;
+        }
+
+        .hero-label {
+            display: inline-flex;
+            align-items: center;
+            background: var(--ghost);
+            border: 1px solid var(--line2);
+            border-radius: 4px;
+            padding: 6px 12px;
+            margin-bottom: 28px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--fg2);
+        }
+
+        .hero-h1 {
+            font-family: 'Instrument Serif', serif;
+            font-size: clamp(3rem, 5.5vw, 5rem);
+            line-height: 1.0;
+            letter-spacing: -1.5px;
+            color: var(--fg);
+            margin-bottom: 24px;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        .hi {
+            display: inline;
+            background: var(--accent);
+            color: #0C0C0E;
+            padding: 0 6px;
+            border-radius: 4px;
+            font-style: normal;
+        }
+
+        .hero-sub {
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--fg2);
+            font-weight: 300;
+            max-width: 440px;
+            margin-bottom: 36px;
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        /* hero stats */
+        .hero-r {
+            display: flex;
+            flex-direction: column;
+            padding: 80px 0 60px;
+        }
+
+        .hstat {
+            padding: 24px 0;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .hstat:first-child {
+            border-top: 1px solid var(--line);
+        }
+
+        .hstat-n {
+            font-family: 'Instrument Serif', serif;
+            font-size: clamp(2.2rem, 3.5vw, 3.6rem);
+            line-height: 1;
+            letter-spacing: -2px;
+            color: var(--fg);
+            flex-shrink: 0;
+            min-width: 110px;
+        }
+
+        .hstat-n span {
+            color: var(--accent);
+        }
+
+        .hstat-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--fg);
+            margin-bottom: 3px;
+        }
+
+        .hstat-sub {
+            font-size: 12px;
+            color: var(--fg2);
+            font-weight: 300;
+        }
+
+        /* ═══════════════ TICKER ═══════════════ */
+        .ticker-wrap {
+            background: var(--ticker);
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+            overflow: hidden;
+            padding: 12px 0;
+            white-space: nowrap;
+        }
+
+        .ticker-track {
+            display: inline-flex;
+            animation: tick 30s linear infinite;
+        }
+
+        @keyframes tick {
+            from {
+                transform: translateX(0)
+            }
+
+            to {
+                transform: translateX(-50%)
+            }
+        }
+
+        .ti {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 28px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--fg2);
+        }
+
+        .ti .d {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--accent);
+            flex-shrink: 0;
+        }
+
+        /* ═══════════════ LAYANAN ═══════════════ */
+        #features {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 100px 40px;
+        }
+
+        .feat-hdr {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 64px;
+            align-items: end;
+        }
+
+        .feat-title {
+            font-family: 'Instrument Serif', serif;
+            font-size: clamp(2rem, 4vw, 3.6rem);
+            letter-spacing: -1.5px;
+            line-height: 1;
+            color: var(--fg);
+            margin-top: 12px;
+        }
+
+        .feat-title em {
+            font-style: italic;
+            color: var(--fg2);
+        }
+
+        .feat-desc {
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--fg2);
+            font-weight: 300;
+        }
+
+        .feat-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .feat-item {
+            display: grid;
+            grid-template-columns: 52px 1fr 1fr 110px;
+            align-items: center;
+            gap: 24px;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--line);
+            transition: all .25s;
+            cursor: default;
+            position: relative;
+        }
+
+        .feat-item::before {
+            content: '';
+            position: absolute;
+            left: -40px;
+            right: -40px;
+            top: 0;
+            bottom: 0;
+            background: var(--card);
+            opacity: 0;
+            transition: opacity .25s;
+            z-index: -1;
+            border-radius: 4px;
+        }
+
+        .feat-item:hover::before {
+            opacity: 1;
+        }
+
+        .feat-n {
+            font-family: 'Instrument Serif', serif;
+            font-size: 26px;
+            color: var(--fg3);
+            font-style: italic;
+            text-align: right;
+            flex-shrink: 0;
+            transition: color .25s;
+        }
+
+        .feat-item:hover .feat-n {
+            color: var(--accent);
+        }
+
+        .feat-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--fg);
+        }
+
+        .feat-body {
+            font-size: 13px;
+            color: var(--fg2);
+            line-height: 1.65;
+            font-weight: 300;
+        }
+
+        .feat-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 100px;
+            border: 1px solid var(--line2);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--fg2);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-align: right;
+            white-space: nowrap;
+            transition: all .25s;
+        }
+
+        .feat-item:hover .feat-tag {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(232, 255, 71, .07);
+        }
+
+        /* ═══════════════ ACCENT BAR ═══════════════ */
+        .accent-bar {
+            background: var(--accent);
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+        }
+
+        .abar-text {
+            font-family: 'Instrument Serif', serif;
+            font-size: clamp(1rem, 2vw, 1.4rem);
+            color: #0C0C0E;
+            font-style: italic;
+            flex: 1;
+        }
+
+        .abar-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: #0C0C0E;
+            color: #F2F2EF;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: opacity .2s;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .abar-cta:hover {
+            opacity: .8;
+        }
+
+        /* ═══════════════ WHY ═══════════════ */
+        #why {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 100px 40px;
+        }
+
+        .why-grid {
+            display: grid;
+            grid-template-columns: 5fr 7fr;
+            gap: 80px;
+            align-items: start;
+        }
+
+        .why-stick {
+            position: sticky;
+            top: 100px;
+        }
+
+        .why-big {
+            font-family: 'Instrument Serif', serif;
+            font-size: clamp(2.5rem, 5vw, 4.5rem);
+            line-height: .95;
+            letter-spacing: -2px;
+            color: var(--fg);
+            margin-top: 20px;
+        }
+
+        .why-big em {
+            font-style: italic;
+            color: var(--fg2);
+        }
+
+        .why-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .wcard {
+            background: var(--card);
+            border: 1px solid var(--line);
+            padding: 24px 28px;
+            border-radius: 4px;
+            transition: all .25s;
+        }
+
+        .wcard:hover {
+            border-color: var(--line2);
+            background: var(--card-h);
+            transform: translateX(8px);
+        }
+
+        .wcard-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .wicon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--ghost);
+            border: 1px solid var(--line2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+            flex-shrink: 0;
+            transition: all .25s;
+        }
+
+        .wcard:hover .wicon {
+            background: rgba(232, 255, 71, .1);
+            border-color: rgba(232, 255, 71, .3);
+        }
+
+        .wcard h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--fg);
+        }
+
+        .wcard p {
+            font-size: 13px;
+            color: var(--fg2);
+            line-height: 1.7;
+            font-weight: 300;
+        }
+
+        /* ═══════════════ PROSES ═══════════════ */
+        #process {
+            background: var(--bg2);
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+            padding: 80px 0;
+        }
+
+        .proc-inner {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+
+        .proc-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 56px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .proc-title {
+            font-family: 'Instrument Serif', serif;
+            font-size: clamp(1.8rem, 3vw, 2.8rem);
+            letter-spacing: -1px;
+            color: var(--fg);
+        }
+
+        .proc-steps {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .pstep {
+            padding: 32px 28px;
+            border-right: 1px solid var(--line);
+        }
+
+        .pstep:first-child {
+            padding-left: 0;
+        }
+
+        .pstep:last-child {
+            border-right: none;
+        }
+
+        .pnum {
+            font-family: 'Instrument Serif', serif;
+            font-size: 50px;
+            font-style: italic;
+            color: var(--line2);
+            line-height: 1;
+            margin-bottom: 16px;
+            transition: color .25s;
+        }
+
+        .pstep:hover .pnum {
+            color: var(--accent);
+        }
+
+        .picon {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .pstep h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--fg);
+            margin-bottom: 8px;
+        }
+
+        .pstep p {
+            font-size: 13px;
+            color: var(--fg2);
+            line-height: 1.65;
+            font-weight: 300;
+        }
+
+        /* ═══════════════ ARMADA ═══════════════ */
+        #fleet {
+            padding: 100px 0;
+            overflow: hidden;
+        }
+
+        .fleet-head {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 40px 48px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .fleet-title {
+            font-family: 'Instrument Serif', serif;
+            font-size: clamp(2rem, 3.5vw, 3.2rem);
+            letter-spacing: -1px;
+            color: var(--fg);
+        }
+
+        .fleet-title em {
+            font-style: italic;
+            color: var(--fg2);
+        }
+
+        .fleet-scroll {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 40px 24px;
+        }
+
+        .fleet-track {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+        }
+
+        .fcard {
+            width: 100%;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 28px;
+            transition: all .3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .fcard::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform .35s var(--ease);
+        }
+
+        .fcard:hover::before {
+            transform: scaleX(1);
+        }
+
+        .fcard:hover {
+            border-color: var(--line2);
+            transform: translateY(-6px);
+        }
+
+        .fcard-icon {
+            font-size: 32px;
+            margin-bottom: 18px;
+        }
+
+        .fcard h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--fg);
+            margin-bottom: 10px;
+        }
+
+        .fcard p {
+            font-size: 13px;
+            color: var(--fg2);
+            line-height: 1.7;
+            font-weight: 300;
+            margin-bottom: 18px;
+        }
+
+        .fcap {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            background: var(--ghost);
+            border: 1px solid var(--line2);
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--fg2);
+        }
+
+        .fleet-hint {
+            display: none;
+            max-width: 1280px;
+            margin: 8px auto 0;
+            padding: 0 40px;
+            font-size: 12px;
+            color: var(--fg3);
+            text-align: center;
+        }
+
+        /* ═══════════════ ABOUT ═══════════════ */
+        #about {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 100px 40px;
+            display: grid;
+            grid-template-columns: 5fr 7fr;
+            gap: 80px;
+            align-items: start;
+        }
+
+        .about-vis {
+            position: relative;
+            padding-bottom: 24px;
+        }
+
+        .about-img-wrap {
+            width: 100%;
+            height: clamp(280px, 38vw, 480px);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            position: relative;
+            background: var(--bg3);
+        }
+
+        .about-img-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(25%) brightness(.9);
+        }
+
+        .aph {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 56px;
+            background: var(--bg3);
+        }
+
+        .about-yrs {
+            position: absolute;
+            bottom: 0;
+            right: -16px;
+            width: 88px;
+            height: 88px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 4px solid var(--bg);
+            z-index: 2;
+        }
+
+        .about-yrs span:first-child {
+            font-family: 'Instrument Serif', serif;
+            font-size: 24px;
+            color: #0C0C0E;
+            line-height: 1;
+        }
+
+        .about-yrs span:last-child {
+            font-size: 8px;
+            font-weight: 700;
+            color: #0C0C0E;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        .about-content {
+            padding-top: 0;
+        }
+
+        .about-pull {
+            font-family: 'Instrument Serif', serif;
+            font-size: clamp(1.4rem, 2.2vw, 2rem);
+            font-style: italic;
+            line-height: 1.35;
+            color: var(--fg);
+            margin: 16px 0 28px;
+            padding-left: 18px;
+            border-left: 3px solid var(--accent);
+        }
+
+        .about-body {
+            font-size: 14px;
+            line-height: 1.85;
+            color: var(--fg2);
+            font-weight: 300;
+            margin-bottom: 14px;
+        }
+
+        .about-feats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 28px;
+        }
+
+        .afc {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 14px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            transition: all .25s;
+        }
+
+        .afc:hover {
+            border-color: var(--line2);
+        }
+
+        .afc-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            background: rgba(232, 255, 71, .1);
+            border: 1px solid rgba(232, 255, 71, .25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 13px;
+        }
+
+        .afc h4 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--fg);
+            margin-bottom: 2px;
+        }
+
+        .afc p {
+            font-size: 12px;
+            color: var(--fg2);
+        }
+
+        /* ═══════════════ CTA ═══════════════ */
+        #contact-cta {
+            background: var(--fg);
+            padding: 80px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .cta-h {
+            font-family: 'Instrument Serif', serif;
+            font-size: clamp(2rem, 5vw, 4.5rem);
+            letter-spacing: -2px;
+            color: var(--bg);
+            line-height: 1;
+            margin: 16px 0 14px;
+        }
+
+        .cta-h em {
+            font-style: italic;
+            opacity: .5;
+        }
+
+        .cta-sub {
+            font-size: 15px;
+            color: var(--bg);
+            opacity: .55;
+            margin-bottom: 32px;
+            max-width: 480px;
+            font-weight: 300;
+        }
+
+        .cta-btns {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-wa {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 24px;
+            background: #25D366;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all .2s;
+        }
+
+        .btn-wa:hover {
+            background: #1fbd59;
+            transform: translateY(-2px);
+        }
+
+        .btn-mail {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 24px;
+            background: var(--bg);
+            color: var(--fg);
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all .2s;
+        }
+
+        .btn-mail:hover {
+            opacity: .8;
+            transform: translateY(-2px);
+        }
+
+        /* ═══════════════ FOOTER ═══════════════ */
+        footer {
+            background: var(--bg2);
+            border-top: 1px solid var(--line);
+            padding: 60px 40px 32px;
+        }
+
+        .foot-inner {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .foot-top {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 48px;
+        }
+
+        .foot-logo img {
+            height: 28px;
+            filter: brightness(0) invert(1);
+            margin-bottom: 14px;
+        }
+
+        [data-theme="light"] .foot-logo img {
+            filter: brightness(0);
+            opacity: .7;
+        }
+
+        .foot-logo-fb {
+            font-family: 'Instrument Serif', serif;
+            font-size: 20px;
+            color: var(--fg);
+            margin-bottom: 14px;
+            display: none;
+        }
+
+        .foot-about {
+            font-size: 13px;
+            color: var(--fg2);
+            line-height: 1.75;
+            font-weight: 300;
+            margin-bottom: 20px;
+            max-width: 260px;
+        }
+
+        .socials {
+            display: flex;
+            gap: 8px;
+        }
+
+        .soc {
+            width: 34px;
+            height: 34px;
+            border-radius: 6px;
+            background: var(--ghost);
+            border: 1px solid var(--line2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--fg2);
+            text-decoration: none;
+            transition: all .2s;
+            flex-shrink: 0;
+        }
+
+        .soc:hover {
+            background: var(--fg);
+            color: var(--bg);
+            border-color: var(--fg);
+        }
+
+        .foot-col h4 {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--fg2);
+            margin-bottom: 16px;
+        }
+
+        .foot-col a {
+            display: block;
+            font-size: 13px;
+            color: var(--fg2);
+            text-decoration: none;
+            margin-bottom: 8px;
+            font-weight: 300;
+            transition: color .2s;
+        }
+
+        .foot-col a:hover {
+            color: var(--fg);
+        }
+
+        .foot-col p {
+            font-size: 13px;
+            color: var(--fg2);
+            margin-bottom: 6px;
+            font-weight: 300;
+        }
+
+        .foot-bot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 24px;
+            border-top: 1px solid var(--line);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .foot-copy {
+            font-size: 12px;
+            color: var(--fg3);
+        }
+
+        .portal {
+            font-size: 11px;
+            color: var(--bg2) !important;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: color .2s;
+        }
+
+        .portal:hover {
+            color: var(--fg3) !important;
+        }
+
+        /* scroll-top */
+        #stbtn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 44px;
+            height: 44px;
+            background: var(--fg);
+            color: var(--bg);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 997;
+            transition: all .2s;
+        }
+
+        #stbtn.show {
+            display: flex;
+        }
+
+        #stbtn:hover {
+            transform: translateY(-3px);
+            opacity: .85;
+        }
+
+        /* ═══════════════ REVEAL ═══════════════ */
+        .rv {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity .7s var(--ease), transform .7s var(--ease);
+        }
+
+        .rv.in {
+            opacity: 1;
+            transform: none;
+        }
+
+        .rl {
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: opacity .7s var(--ease), transform .7s var(--ease);
+        }
+
+        .rl.in {
+            opacity: 1;
+            transform: none;
+        }
+
+        /* ═══════════════ RESPONSIVE ═══════════════ */
+
+        /* 1024px — tablet landscape */
+        @media(max-width:1024px) {
+
+            .nav-inner {
+                padding: 0 20px;
+            }
+
+            .nav-links,
+            .nav-cta-wrap {
+                display: none;
+            }
+
+            .hamb {
+                display: flex;
+            }
+
+            #home {
+                grid-template-columns: 1fr;
+                padding: 0 32px;
+                padding-top: 64px;
+                gap: 0;
+            }
+
+            .hero-l {
+                padding: 80px 0 32px;
+            }
+
+            .hero-r {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                padding: 0 0 60px;
+            }
+
+            .hstat {
+                padding: 18px 12px;
+                border-right: 1px solid var(--line);
+                border-bottom: 1px solid var(--line);
+            }
+
+            .hstat:first-child,
+            .hstat:nth-child(2) {
+                border-top: 1px solid var(--line);
+            }
+
+            .hstat:nth-child(even) {
+                border-right: none;
+            }
+
+            .hstat:nth-child(3),
+            .hstat:nth-child(4) {
+                border-bottom: none;
+            }
+
+            .feat-hdr {
+                grid-template-columns: 1fr;
+            }
+
+            .why-grid {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+
+            .why-stick {
+                position: static;
+            }
+
+            .proc-steps {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .pstep:nth-child(1) {
+                border-right: 1px solid var(--line);
+                border-bottom: 1px solid var(--line);
+                padding-left: 0;
+            }
+
+            .pstep:nth-child(2) {
+                border-right: none;
+                border-bottom: 1px solid var(--line);
+            }
+
+            .pstep:nth-child(3) {
+                border-right: 1px solid var(--line);
+                padding-left: 28px;
+            }
+
+            .pstep:nth-child(4) {
+                border-right: none;
+                padding-left: 28px;
+            }
+
+            #about {
+                grid-template-columns: 1fr;
+                gap: 0;
+                padding: 80px 32px;
+            }
+
+            .about-vis {
+                max-width: 500px;
+                margin: 0 auto 56px;
+            }
+
+            .about-img-wrap {
+                height: clamp(240px, 45vw, 380px);
+            }
+
+            .about-yrs {
+                right: 0;
+            }
+
+            .foot-top {
+                grid-template-columns: 1fr 1fr;
+                gap: 32px;
+            }
+        }
+
+        /* 768px — tablet portrait */
+        @media(max-width:768px) {
+
+            #home {
+                padding: 0 20px;
+                padding-top: 64px;
+            }
+
+            .hero-l {
+                padding: 80px 0 28px;
+            }
+
+            .hero-r {
+                display: none;
+            }
+
+            #features {
+                padding: 72px 20px;
+            }
+
+            .feat-hdr {
+                margin-bottom: 40px;
+            }
+
+            .feat-item {
+                grid-template-columns: 40px 1fr auto;
+                gap: 14px;
+            }
+
+            .feat-body {
+                display: none;
+            }
+
+            #why {
+                padding: 72px 20px;
+            }
+
+            .why-grid {
+                gap: 32px;
+            }
+
+            #process {
+                padding: 72px 0;
+            }
+
+            .proc-inner {
+                padding: 0 20px;
+            }
+
+            #fleet {
+                padding: 72px 0;
+            }
+
+            .fleet-head {
+                padding: 0 20px 36px;
+            }
+
+            .fleet-scroll {
+                overflow-x: auto;
+                padding: 0 20px 24px;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                max-width: none;
+                margin: 0;
+            }
+
+            .fleet-scroll::-webkit-scrollbar {
+                display: none;
+            }
+
+            .fleet-track {
+                display: flex;
+                grid-template-columns: unset;
+                width: max-content;
+            }
+
+            .fcard {
+                width: 260px;
+                flex-shrink: 0;
+            }
+
+            .fleet-hint {
+                display: block;
+                padding: 0 20px;
+            }
+
+            #about {
+                padding: 72px 20px;
+                gap: 0;
+            }
+
+            .about-vis {
+                max-width: 100%;
+                margin: 0 0 48px;
+            }
+
+            .about-img-wrap {
+                height: clamp(220px, 52vw, 340px);
+            }
+
+            .about-yrs {
+                width: 80px;
+                height: 80px;
+                right: 0;
+            }
+
+            .about-yrs span:first-child {
+                font-size: 22px;
+            }
+
+            .about-feats {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .accent-bar {
+                padding: 16px 20px;
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+            }
+
+            #contact-cta {
+                padding: 60px 20px;
+            }
+
+            .cta-btns {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-wa,
+            .btn-mail {
+                width: 100%;
+                max-width: 320px;
+                justify-content: center;
+            }
+
+            footer {
+                padding: 48px 20px 24px;
+            }
+
+            .foot-top {
+                grid-template-columns: 1fr;
+                gap: 28px;
+            }
+
+            .foot-bot {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        /* 480px — mobile */
+        @media(max-width:480px) {
+            #home {
+                padding: 0 16px;
+                padding-top: 64px;
+            }
+
+            .hero-l {
+                padding: 76px 0 24px;
+            }
+
+            .hero-h1 {
+                font-size: clamp(2.2rem, 8vw, 2.8rem);
+                letter-spacing: -1px;
+            }
+
+            .hero-btns {
+                flex-direction: column;
+            }
+
+            .btn-pri,
+            .btn-ghost {
+                width: 100%;
+                justify-content: center;
+            }
+
+            #features,
+            #why,
+            #about {
+                padding: 60px 16px;
+            }
+
+            .feat-item {
+                grid-template-columns: 36px 1fr auto;
+                gap: 10px;
+            }
+
+            #fleet {
+                padding: 60px 0;
+            }
+
+            .fleet-head {
+                padding: 0 16px 28px;
+            }
+
+            .fleet-scroll {
+                padding: 0 16px 20px;
+            }
+
+            .fleet-hint {
+                padding: 0 16px;
+            }
+
+            .proc-inner {
+                padding: 0 16px;
+            }
+
+            .proc-steps {
+                grid-template-columns: 1fr;
+            }
+
+            .pstep {
+                border-right: none !important;
+                border-bottom: 1px solid var(--line) !important;
+                padding: 24px 0 !important;
+            }
+
+            .pstep:last-child {
+                border-bottom: none !important;
+            }
+
+            .about-img-wrap {
+                height: clamp(200px, 62vw, 300px);
+            }
+
+            .about-feats {
+                grid-template-columns: 1fr;
+            }
+
+            .about-yrs {
+                right: 0;
+                width: 72px;
+                height: 72px;
+            }
+
+            .about-yrs span:first-child {
+                font-size: 20px;
+            }
+
+            #contact-cta {
+                padding: 52px 16px;
+            }
+
+            footer {
+                padding: 40px 16px 24px;
+            }
+
+            .foot-top {
+                gap: 24px;
+            }
+
+            .fcard {
+                width: 260px;
+            }
+        }
+
+        /* 360px — very small */
+        @media(max-width:360px) {
+            .hero-h1 {
+                font-size: 2rem;
+            }
+
+            .fcard {
+                width: 240px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="overlay"></div>
+
+    <!-- Controls — Desktop only (hidden on mobile via CSS) -->
+    <div id="ctrl">
+        <div class="lang-pill">
+            <button class="lbtn on" id="bID" onclick="setLang('id')">ID</button>
+            <button class="lbtn" id="bEN" onclick="setLang('en')">EN</button>
+        </div>
+        <button class="tbtn" onclick="toggleTheme()" aria-label="Toggle theme">
+            <div class="tknob"><span id="tico">🌙</span></div>
+        </button>
+    </div>
+
+    <!-- Navbar -->
+    <nav id="nav">
+        <div class="nav-inner">
+            <a href="#" class="nav-logo">
+                <img src="assets/img/TSC_page-0001.png" alt="TSC"
+                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                <div class="err">TSC</div>
+                <span class="nav-logotype">TSC</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#home" data-i18n="nav.home">Home</a></li>
+                <li><a href="#features" data-i18n="nav.services">Layanan</a></li>
+                <li><a href="#about" data-i18n="nav.about">Tentang</a></li>
+                <li><a href="#process" data-i18n="nav.how">Cara Kerja</a></li>
+                <li><a href="#fleet" data-i18n="nav.fleet">Armada</a></li>
+            </ul>
+            <div class="nav-cta-wrap">
+                <a href="#contact-cta" class="btn-nav" data-i18n="nav.contact">Hubungi Kami</a>
+            </div>
+            <button class="hamb" id="hamb" aria-label="Menu"><span></span><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <!-- Drawer -->
+    <div id="drawer">
+        <a href="#home" data-i18n="nav.home">Home</a>
+        <a href="#features" data-i18n="nav.services">Layanan</a>
+        <a href="#about" data-i18n="nav.about">Tentang</a>
+        <a href="#process" data-i18n="nav.how">Cara Kerja</a>
+        <a href="#fleet" data-i18n="nav.fleet">Armada</a>
+        <a href="#contact-cta" class="btn-nav" data-i18n="nav.contact">Hubungi Kami</a>
+
+        <!-- Controls inside drawer for mobile -->
+        <div class="drawer-controls">
+            <div class="lang-pill">
+                <button class="lbtn on" id="bID_m" onclick="setLang('id')">ID</button>
+                <button class="lbtn" id="bEN_m" onclick="setLang('en')">EN</button>
+            </div>
+            <button class="tbtn" onclick="toggleTheme()" aria-label="Toggle theme">
+                <div class="tknob"><span id="tico_m">🌙</span></div>
+            </button>
+        </div>
+    </div>
+
+    <!-- ══ HERO ══ -->
+    <section id="home">
+        <div class="hero-l rl">
+            <div class="hero-label"><span class="adot"></span><span data-i18n="hero.badge">Logistik Terpercaya
+                    Indonesia</span></div>
+            <h1 class="hero-h1">PT Tata<br>Sanjaya<br><span class="hi">Cakrawala</span></h1>
+            <p class="hero-sub" data-i18n="hero.sub">Solusi logistik modern yang menggerakkan bisnis Anda — dari
+                Jabodetabek hingga seluruh pelosok nusantara.</p>
+            <div class="hero-btns">
+                <a href="https://wa.me/6281310879577" target="_blank" class="btn-pri">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                    </svg>
+                    <span data-i18n="hero.wa">Chat WhatsApp</span>
+                </a>
+                <a href="#features" class="btn-ghost">
+                    <span data-i18n="hero.learn">Lihat Layanan</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+        <div class="hero-r rv">
+            <div class="hstat">
+                <div class="hstat-n"><span>100</span>+</div>
+                <div>
+                    <div class="hstat-label" data-i18n="s1.l">Klien Aktif</div>
+                    <div class="hstat-sub" data-i18n="s1.s">Di berbagai industri</div>
+                </div>
+            </div>
+            <div class="hstat">
+                <div class="hstat-n"><span>10K</span>+</div>
+                <div>
+                    <div class="hstat-label" data-i18n="s2.l">Pengiriman/Bulan</div>
+                    <div class="hstat-sub" data-i18n="s2.s">Aktif & termonitor</div>
+                </div>
+            </div>
+            <div class="hstat">
+                <div class="hstat-n">99<span>.8%</span></div>
+                <div>
+                    <div class="hstat-label" data-i18n="s3.l">Ketepatan Waktu</div>
+                    <div class="hstat-sub" data-i18n="s3.s">Terjamin & diasuransikan</div>
+                </div>
+            </div>
+            <div class="hstat">
+                <div class="hstat-n">24<span>/7</span></div>
+                <div>
+                    <div class="hstat-label" data-i18n="s4.l">Customer Support</div>
+                    <div class="hstat-sub" data-i18n="s4.s">Siap tanpa henti</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ticker -->
+    <div class="ticker-wrap">
+        <div class="ticker-track" id="ticker"></div>
+    </div>
+
+    <!-- ══ LAYANAN ══ -->
+    <section id="features">
+        <div class="feat-hdr rv">
+            <div>
+                <span class="eyebrow" data-i18n="feat.eye">Apa yang Kami Tawarkan</span>
+                <h2 class="feat-title"><span data-i18n="feat.t1">Layanan</span><br><em data-i18n="feat.t2">Unggulan
+                        TSC</em></h2>
+            </div>
+            <p class="feat-desc" data-i18n="feat.desc">Solusi logistik lengkap disesuaikan skala dan kebutuhan bisnis
+                Anda — dari sewa harian hingga distribusi nasional.</p>
+        </div>
+        <div class="feat-list">
+            <div class="feat-item rv">
+                <div class="feat-n">01</div>
+                <div class="feat-name" data-i18n="f1.n">Daily Rent</div>
+                <div class="feat-body" data-i18n="f1.d">Sewa kendaraan logistik harian, fleksibel dari pick-up hingga
+                    truk kontainer.</div>
+                <div class="feat-tag" data-i18n="f1.t">Harian</div>
+            </div>
+            <div class="feat-item rv">
+                <div class="feat-n">02</div>
+                <div class="feat-name" data-i18n="f2.n">Reguler</div>
+                <div class="feat-body" data-i18n="f2.d">Pengiriman terjadwal rute tetap. Hemat hingga 30% dengan kontrak
+                    jangka panjang.</div>
+                <div class="feat-tag" data-i18n="f2.t">Terjadwal</div>
+            </div>
+            <div class="feat-item rv">
+                <div class="feat-n">03</div>
+                <div class="feat-name" data-i18n="f3.n">On Call</div>
+                <div class="feat-body" data-i18n="f3.d">Layanan darurat 24/7. Response time kurang dari 2 jam untuk
+                    kebutuhan mendesak.</div>
+                <div class="feat-tag" data-i18n="f3.t">24/7</div>
+            </div>
+            <div class="feat-item rv">
+                <div class="feat-n">04</div>
+                <div class="feat-name" data-i18n="f4.n">Real-time Visibility</div>
+                <div class="feat-body" data-i18n="f4.d">Tracking & monitoring live. Pantau posisi dan status barang dari
+                    mobile kapan saja.</div>
+                <div class="feat-tag" data-i18n="f4.t">Live</div>
+            </div>
+            <div class="feat-item rv">
+                <div class="feat-n">05</div>
+                <div class="feat-name" data-i18n="f5.n">Reliability</div>
+                <div class="feat-body" data-i18n="f5.d">Garansi 99.8% tepat waktu. Asuransi penuh untuk setiap
+                    pengiriman tanpa terkecuali.</div>
+                <div class="feat-tag" data-i18n="f5.t">Terjamin</div>
+            </div>
+            <div class="feat-item rv">
+                <div class="feat-n">06</div>
+                <div class="feat-name" data-i18n="f6.n">Smart Technology</div>
+                <div class="feat-body" data-i18n="f6.d">Sistem AI terintegrasi untuk optimasi rute, prediksi waktu, dan
+                    laporan otomatis.</div>
+                <div class="feat-tag" data-i18n="f6.t">AI-Powered</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Accent Bar -->
+    <div class="accent-bar rv">
+        <p class="abar-text" data-i18n="bar.q">"Bukan sekadar jasa kirim — kami adalah sistem saraf logistik bisnis
+            Anda."</p>
+        <a href="#contact-cta" class="abar-cta">
+            <span data-i18n="bar.cta">Diskusi Sekarang</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+        </a>
+    </div>
+
+    <!-- ══ KENAPA ══ -->
+    <section id="why">
+        <div class="why-grid">
+            <div class="why-stick rl">
+                <span class="eyebrow" data-i18n="why.eye">Keunggulan Kami</span>
+                <h2 class="why-big"><span data-i18n="why.t1">Kenapa</span><br><em data-i18n="why.t2">pilih TSC?</em>
+                </h2>
+            </div>
+            <div class="why-cards">
+                <div class="wcard rv">
+                    <div class="wcard-top">
+                        <div class="wicon">🏆</div>
+                        <h3 data-i18n="w1.n">Pengalaman Terpercaya</h3>
+                    </div>
+                    <p data-i18n="w1.d">Lebih dari 10 tahun melayani berbagai industri dengan kepuasan pelanggan 98%.
+                    </p>
+                </div>
+                <div class="wcard rv">
+                    <div class="wcard-top">
+                        <div class="wicon">🚀</div>
+                        <h3 data-i18n="w2.n">Armada Modern</h3>
+                    </div>
+                    <p data-i18n="w2.d">Fleet terawat, rata-rata usia kendaraan di bawah 3 tahun. Zero surprise
+                        breakdown.</p>
+                </div>
+                <div class="wcard rv">
+                    <div class="wcard-top">
+                        <div class="wicon">👷</div>
+                        <h3 data-i18n="w3.n">Driver Profesional</h3>
+                    </div>
+                    <p data-i18n="w3.d">Semua driver terlatih, bersertifikat, background check ketat. Safety adalah
+                        budaya.</p>
+                </div>
+                <div class="wcard rv">
+                    <div class="wcard-top">
+                        <div class="wicon">💰</div>
+                        <h3 data-i18n="w4.n">Harga Transparan</h3>
+                    </div>
+                    <p data-i18n="w4.d">Tarif jelas, no hidden cost. Invoice detail untuk setiap pengiriman.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ PROSES ══ -->
+    <section id="process">
+        <div class="proc-inner">
+            <div class="proc-head">
+                <span class="eyebrow" data-i18n="proc.eye">Cara Kerja</span>
+                <h2 class="proc-title rv" data-i18n="proc.title">Mulai dalam 4 Langkah</h2>
+            </div>
+            <div class="proc-steps">
+                <div class="pstep rv">
+                    <div class="pnum">01</div>
+                    <div class="picon">📱</div>
+                    <h3 data-i18n="p1.n">Hubungi Kami</h3>
+                    <p data-i18n="p1.d">Via WhatsApp, telepon, atau website untuk konsultasi kebutuhan logistik Anda</p>
+                </div>
+                <div class="pstep rv">
+                    <div class="pnum">02</div>
+                    <div class="picon">📋</div>
+                    <h3 data-i18n="p2.n">Penawaran Custom</h3>
+                    <p data-i18n="p2.d">Harga terbaik sesuai volume dan frekuensi pengiriman Anda, tanpa markup</p>
+                </div>
+                <div class="pstep rv">
+                    <div class="pnum">03</div>
+                    <div class="picon">✅</div>
+                    <h3 data-i18n="p3.n">Konfirmasi Order</h3>
+                    <p data-i18n="p3.d">Setujui penawaran, jadwalkan pick-up, dan kami siapkan semuanya</p>
+                </div>
+                <div class="pstep rv">
+                    <div class="pnum">04</div>
+                    <div class="picon">🚚</div>
+                    <h3 data-i18n="p4.n">Track & Delivery</h3>
+                    <p data-i18n="p4.d">Monitor real-time, terima barang tepat waktu, laporan otomatis ke email</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ ARMADA ══ -->
+    <section id="fleet">
+        <div class="fleet-head">
+            <div>
+                <span class="eyebrow" data-i18n="fleet.eye">Armada & Jangkauan</span>
+                <h2 class="fleet-title rv"><span data-i18n="fleet.t1">Pilihan</span><br><em data-i18n="fleet.t2">Armada
+                        Lengkap</em></h2>
+            </div>
+            <p class="feat-desc rv" style="max-width:300px" data-i18n="fleet.sub">Dari 500kg hingga 20 ton. Semua
+                tersedia, terawat, dan GPS.</p>
+        </div>
+        <div class="fleet-scroll">
+            <div class="fleet-track">
+                <div class="fcard rv">
+                    <div class="fcard-icon">🚚</div>
+                    <h3 data-i18n="fc1.n">Blind Van & Box</h3>
+                    <p data-i18n="fc1.d">Ideal untuk pengiriman retail dan e-commerce. Distribusi ke toko dan
+                        end-customer.</p><span class="fcap" data-i18n="fc1.c">📦 500 kg – 1 ton</span>
+                </div>
+                <div class="fcard rv">
+                    <div class="fcard-icon">🚛</div>
+                    <h3 data-i18n="fc2.n">CDD & Truk Engkel</h3>
+                    <p data-i18n="fc2.d">Pengiriman skala menengah. Regional dan antar kota dengan efisiensi maksimal.
+                    </p><span class="fcap" data-i18n="fc2.c">📦 2 – 4 ton</span>
+                </div>
+                <div class="fcard rv">
+                    <div class="fcard-icon">🚚</div>
+                    <h3 data-i18n="fc3.n">Fuso & Wing Box</h3>
+                    <p data-i18n="fc3.d">Armada industri besar. GPS tracking aktif, asuransi penuh, kapasitas masif.</p>
+                    <span class="fcap" data-i18n="fc3.c">📦 6 – 20 ton</span>
+                </div>
+                <div class="fcard rv">
+                    <div class="fcard-icon">🗺️</div>
+                    <h3 data-i18n="fc4.n">Jabodetabek</h3>
+                    <p data-i18n="fc4.d">Jakarta, Bogor, Depok, Tangerang, Bekasi — same-day delivery tersedia.</p><span
+                        class="fcap" data-i18n="fc4.c">⚡ Same-day</span>
+                </div>
+                <div class="fcard rv">
+                    <div class="fcard-icon">🌐</div>
+                    <h3 data-i18n="fc5.n">Seluruh Indonesia</h3>
+                    <p data-i18n="fc5.d">Distribusi nasional ke seluruh kepulauan. Jadwal rutin ke semua kota besar.</p>
+                    <span class="fcap" data-i18n="fc5.c">🌐 Nationwide</span>
+                </div>
+            </div>
+        </div>
+        <p class="fleet-hint rv" data-i18n="fleet.hint">← Geser untuk lihat lebih →</p>
+    </section>
+
+    <!-- ══ ABOUT ══ -->
+    <section id="about">
+        <div class="about-vis rl">
+            <div class="about-img-wrap">
+                <img src="assets/img/wp-1.png" alt="TSC Logistics"
+                    onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex'">
+                <div class="aph">🚛</div>
+            </div>
+            <div class="about-yrs">
+                <span>10+</span>
+                <span data-i18n="ab.yrs">Tahun<br>Pengalaman</span>
+            </div>
+        </div>
+        <div class="about-content rv">
+            <span class="eyebrow" data-i18n="ab.eye">Tentang Kami</span>
+            <blockquote class="about-pull" data-i18n="ab.pull">Membangun kepercayaan, satu pengiriman sekaligus.
+            </blockquote>
+            <p class="about-body" data-i18n="ab.p1">PT Tata Sanjaya Cakrawala adalah perusahaan logistik yang
+                berkomitmen memberikan solusi transportasi dan distribusi terbaik — bukan sekadar mengantarkan barang,
+                tapi menjaga keberlangsungan bisnis klien kami.</p>
+            <p class="about-body" data-i18n="ab.p2">Didukung armada modern, sistem digital terintegrasi, dan tim
+                profesional berpengalaman, kami telah menjadi mitra logistik pilihan bagi lebih dari 100 perusahaan di
+                berbagai sektor industri.</p>
+            <div class="about-feats">
+                <div class="afc">
+                    <div class="afc-icon">🏅</div>
+                    <div>
+                        <h4 data-i18n="ab.f1.n">Tersertifikasi</h4>
+                        <p data-i18n="ab.f1.d">ISO 9001:2015 certified</p>
+                    </div>
+                </div>
+                <div class="afc">
+                    <div class="afc-icon">🛡️</div>
+                    <div>
+                        <h4 data-i18n="ab.f2.n">Asuransi Penuh</h4>
+                        <p data-i18n="ab.f2.d">Semua pengiriman diasuransikan</p>
+                    </div>
+                </div>
+                <div class="afc">
+                    <div class="afc-icon">👥</div>
+                    <div>
+                        <h4 data-i18n="ab.f3.n">Tim Profesional</h4>
+                        <p data-i18n="ab.f3.d">Staff terlatih & bersertifikat</p>
+                    </div>
+                </div>
+                <div class="afc">
+                    <div class="afc-icon">📈</div>
+                    <div>
+                        <h4 data-i18n="ab.f4.n">Pertumbuhan Stabil</h4>
+                        <p data-i18n="ab.f4.d">40% growth year-over-year</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ CTA ══ -->
+    <section id="contact-cta">
+        <span class="eyebrow" style="color:rgba(12,12,14,.4)" data-i18n="cta.eye">Mulai Sekarang</span>
+        <h2 class="cta-h"><span data-i18n="cta.t1">Siap Bergerak</span><br><em data-i18n="cta.t2">Lebih Cepat?</em></h2>
+        <p class="cta-sub" data-i18n="cta.sub">Bergabunglah dengan 100+ perusahaan yang sudah mempercayai TSC.
+            Konsultasi gratis, penawaran dalam 24 jam.</p>
+        <div class="cta-btns">
+            <a href="https://wa.me/6281310879577" target="_blank" class="btn-wa">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                </svg>
+                <span data-i18n="cta.wa">Chat via WhatsApp</span>
+            </a>
+            <a href="mailto:tatasanjayacakrawala@gmail.com" class="btn-mail">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,12 2,6" />
+                </svg>
+                <span data-i18n="cta.mail">Kirim Email</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- ══ FOOTER ══ -->
+    <footer id="contact">
+        <div class="foot-inner">
+            <div class="foot-top">
+                <div>
+                    <div class="foot-logo">
+                        <img src="assets/img/TSC_page-0001.png" alt="TSC"
+                            onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+                        <div class="foot-logo-fb">TSC</div>
+                    </div>
+                    <p class="foot-about" data-i18n="foot.about">Your Best Logistic Partner — solusi transportasi dan
+                        distribusi modern yang menggerakkan bisnis Indonesia.</p>
+                    <div class="socials">
+                        <a href="https://instagram.com/tatasanjayacakrawala" target="_blank" class="soc"
+                            aria-label="Instagram">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                            </svg>
+                        </a>
+                        <a href="https://id.linkedin.com/in/tata-sanjaya-cakrawala-b61542323" target="_blank"
+                            class="soc" aria-label="LinkedIn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z" />
+                                <circle cx="4" cy="4" r="2" />
+                            </svg>
+                        </a>
+                        <a href="https://wa.me/6281310879577" class="soc" aria-label="WhatsApp">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                <div class="foot-col">
+                    <h4 data-i18n="foot.h1">Layanan</h4>
+                    <a href="#features" data-i18n="f1.n">Daily Rent</a>
+                    <a href="#features" data-i18n="f2.n">Reguler</a>
+                    <a href="#features" data-i18n="f3.n">On Call</a>
+                    <a href="#features" data-i18n="f4.n">Real-time Visibility</a>
+                    <a href="#features" data-i18n="f6.n">Smart Technology</a>
+                </div>
+                <div class="foot-col">
+                    <h4 data-i18n="foot.h2">Perusahaan</h4>
+                    <a href="#about" data-i18n="nav.about">Tentang Kami</a>
+                    <a href="#fleet" data-i18n="nav.fleet">Armada</a>
+                    <a href="#" data-i18n="foot.career">Karir</a>
+                    <a href="#" data-i18n="foot.blog">Blog</a>
+                    <a href="#" data-i18n="foot.faq">FAQ</a>
+                </div>
+                <div class="foot-col">
+                    <h4 data-i18n="foot.h3">Kontak</h4>
+                    <a href="tel:+6281310879577">+62 813 1087 9577</a>
+                    <a href="mailto:tatasanjayacakrawala@gmail.com">tatasanjayacakrawala@gmail.com</a>
+                    <p>Bekasi, Jawa Barat</p>
+                    <p data-i18n="foot.hrs">24 Jam Nonstop</p>
+                </div>
+            </div>
+            <div class="foot-bot">
+                <span class="foot-copy">&copy; 2025 PT Tata Sanjaya Cakrawala. All Rights Reserved.</span>
+                <a href="app.php/login" class="portal">
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" />
+                    </svg>
+                    System Portal
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <button id="stbtn" aria-label="Scroll to top">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 19V5M5 12l7-7 7 7" />
+        </svg>
+    </button>
+
+    <script>
+        const T = {
+            id: {
+                'nav.home': 'Home', 'nav.services': 'Layanan', 'nav.about': 'Tentang',
+                'nav.how': 'Cara Kerja', 'nav.fleet': 'Armada', 'nav.contact': 'Hubungi Kami',
+                'hero.badge': 'Logistik Terpercaya Indonesia',
+                'hero.sub': 'Solusi logistik modern yang menggerakkan bisnis Anda — dari Jabodetabek hingga seluruh pelosok nusantara.',
+                'hero.wa': 'Chat WhatsApp', 'hero.learn': 'Lihat Layanan',
+                's1.l': 'Klien Aktif', 's1.s': 'Di berbagai industri',
+                's2.l': 'Pengiriman/Bulan', 's2.s': 'Aktif & termonitor',
+                's3.l': 'Ketepatan Waktu', 's3.s': 'Terjamin & diasuransikan',
+                's4.l': 'Customer Support', 's4.s': 'Siap tanpa henti',
+                'feat.eye': 'Apa yang Kami Tawarkan', 'feat.t1': 'Layanan', 'feat.t2': 'Unggulan TSC',
+                'feat.desc': 'Solusi logistik lengkap disesuaikan skala dan kebutuhan bisnis Anda — dari sewa harian hingga distribusi nasional.',
+                'f1.n': 'Daily Rent', 'f1.d': 'Sewa kendaraan logistik harian, fleksibel dari pick-up hingga truk kontainer.', 'f1.t': 'Harian',
+                'f2.n': 'Reguler', 'f2.d': 'Pengiriman terjadwal rute tetap. Hemat hingga 30% dengan kontrak jangka panjang.', 'f2.t': 'Terjadwal',
+                'f3.n': 'On Call', 'f3.d': 'Layanan darurat 24/7. Response time kurang dari 2 jam.', 'f3.t': '24/7',
+                'f4.n': 'Real-time Visibility', 'f4.d': 'Tracking & monitoring live. Pantau dari mobile kapan saja.', 'f4.t': 'Live',
+                'f5.n': 'Reliability', 'f5.d': 'Garansi 99.8% tepat waktu. Asuransi penuh tiap pengiriman.', 'f5.t': 'Terjamin',
+                'f6.n': 'Smart Technology', 'f6.d': 'Sistem AI untuk optimasi rute, prediksi waktu, laporan otomatis.', 'f6.t': 'AI-Powered',
+                'bar.q': '"Bukan sekadar jasa kirim — kami adalah sistem saraf logistik bisnis Anda."', 'bar.cta': 'Diskusi Sekarang',
+                'why.eye': 'Keunggulan Kami', 'why.t1': 'Kenapa', 'why.t2': 'pilih TSC?',
+                'w1.n': 'Pengalaman Terpercaya', 'w1.d': 'Lebih dari 10 tahun melayani berbagai industri dengan kepuasan pelanggan 98%.',
+                'w2.n': 'Armada Modern', 'w2.d': 'Fleet terawat, rata-rata usia kendaraan di bawah 3 tahun. Zero surprise breakdown.',
+                'w3.n': 'Driver Profesional', 'w3.d': 'Semua driver terlatih, bersertifikat, background check ketat. Safety adalah budaya.',
+                'w4.n': 'Harga Transparan', 'w4.d': 'Tarif jelas, no hidden cost. Invoice detail untuk setiap pengiriman.',
+                'proc.eye': 'Cara Kerja', 'proc.title': 'Mulai dalam 4 Langkah',
+                'p1.n': 'Hubungi Kami', 'p1.d': 'Via WhatsApp, telepon, atau website untuk konsultasi kebutuhan logistik Anda',
+                'p2.n': 'Penawaran Custom', 'p2.d': 'Harga terbaik sesuai volume dan frekuensi pengiriman Anda, tanpa markup',
+                'p3.n': 'Konfirmasi Order', 'p3.d': 'Setujui penawaran, jadwalkan pick-up, dan kami siapkan semuanya',
+                'p4.n': 'Track & Delivery', 'p4.d': 'Monitor real-time, terima barang tepat waktu, laporan otomatis ke email',
+                'fleet.eye': 'Armada & Jangkauan', 'fleet.t1': 'Pilihan', 'fleet.t2': 'Armada Lengkap',
+                'fleet.sub': 'Dari 500kg hingga 20 ton. Semua tersedia, terawat, dan GPS.',
+                'fc1.n': 'Blind Van & Box', 'fc1.d': 'Ideal untuk pengiriman retail dan e-commerce. Distribusi ke toko dan end-customer.', 'fc1.c': '📦 500 kg – 1 ton',
+                'fc2.n': 'CDD & Truk Engkel', 'fc2.d': 'Pengiriman skala menengah. Regional dan antar kota dengan efisiensi maksimal.', 'fc2.c': '📦 2 – 4 ton',
+                'fc3.n': 'Fuso & Wing Box', 'fc3.d': 'Armada industri besar. GPS tracking aktif, asuransi penuh, kapasitas masif.', 'fc3.c': '📦 6 – 20 ton',
+                'fc4.n': 'Jabodetabek', 'fc4.d': 'Jakarta, Bogor, Depok, Tangerang, Bekasi — same-day delivery tersedia.', 'fc4.c': '⚡ Same-day',
+                'fc5.n': 'Seluruh Indonesia', 'fc5.d': 'Distribusi nasional ke seluruh kepulauan. Jadwal rutin ke semua kota besar.', 'fc5.c': '🌐 Nationwide',
+                'fleet.hint': '← Geser untuk lihat lebih →',
+                'ab.eye': 'Tentang Kami', 'ab.yrs': 'Tahun Pengalaman',
+                'ab.pull': 'Membangun kepercayaan, satu pengiriman sekaligus.',
+                'ab.p1': 'PT Tata Sanjaya Cakrawala adalah perusahaan logistik yang berkomitmen memberikan solusi transportasi dan distribusi terbaik — bukan sekadar mengantarkan barang, tapi menjaga keberlangsungan bisnis klien kami.',
+                'ab.p2': 'Didukung armada modern, sistem digital terintegrasi, dan tim profesional berpengalaman, kami telah menjadi mitra logistik pilihan bagi lebih dari 100 perusahaan di berbagai sektor industri.',
+                'ab.f1.n': 'Tersertifikasi', 'ab.f1.d': 'ISO 9001:2015 certified',
+                'ab.f2.n': 'Asuransi Penuh', 'ab.f2.d': 'Semua pengiriman diasuransikan',
+                'ab.f3.n': 'Tim Profesional', 'ab.f3.d': 'Staff terlatih & bersertifikat',
+                'ab.f4.n': 'Pertumbuhan Stabil', 'ab.f4.d': '40% growth year-over-year',
+                'cta.eye': 'Mulai Sekarang', 'cta.t1': 'Siap Bergerak', 'cta.t2': 'Lebih Cepat?',
+                'cta.sub': 'Bergabunglah dengan 100+ perusahaan yang sudah mempercayai TSC. Konsultasi gratis, penawaran dalam 24 jam.',
+                'cta.wa': 'Chat via WhatsApp', 'cta.mail': 'Kirim Email',
+                'foot.about': 'Your Best Logistic Partner — solusi transportasi dan distribusi modern untuk bisnis Indonesia.',
+                'foot.h1': 'Layanan', 'foot.h2': 'Perusahaan', 'foot.h3': 'Kontak',
+                'foot.career': 'Karir', 'foot.blog': 'Blog', 'foot.faq': 'FAQ', 'foot.hrs': '24 Jam Nonstop',
+            },
+            en: {
+                'nav.home': 'Home', 'nav.services': 'Services', 'nav.about': 'About',
+                'nav.how': 'How It Works', 'nav.fleet': 'Fleet', 'nav.contact': 'Contact Us',
+                'hero.badge': "Indonesia's Trusted Logistics",
+                'hero.sub': 'Modern logistics solutions driving your business — from Greater Jakarta to every corner of Indonesia.',
+                'hero.wa': 'Chat on WhatsApp', 'hero.learn': 'See Services',
+                's1.l': 'Active Clients', 's1.s': 'Across industries',
+                's2.l': 'Deliveries/Month', 's2.s': 'Active & monitored',
+                's3.l': 'On-time Rate', 's3.s': 'Guaranteed & insured',
+                's4.l': 'Customer Support', 's4.s': 'Always ready',
+                'feat.eye': 'What We Offer', 'feat.t1': 'Premium', 'feat.t2': 'TSC Services',
+                'feat.desc': 'Complete logistics solutions tailored to your scale — from daily rental to national distribution.',
+                'f1.n': 'Daily Rent', 'f1.d': 'Flexible daily vehicle rental, from pickup trucks to container trucks.', 'f1.t': 'Daily',
+                'f2.n': 'Regular', 'f2.d': 'Scheduled delivery with fixed routes. Save up to 30% with long-term contracts.', 'f2.t': 'Scheduled',
+                'f3.n': 'On Call', 'f3.d': '24/7 emergency service. Response time under 2 hours for urgent needs.', 'f3.t': '24/7',
+                'f4.n': 'Real-time Visibility', 'f4.d': 'Live tracking & monitoring. Check shipment status anytime via mobile.', 'f4.t': 'Live',
+                'f5.n': 'Reliability', 'f5.d': '99.8% on-time guarantee. Full insurance for every single shipment.', 'f5.t': 'Guaranteed',
+                'f6.n': 'Smart Technology', 'f6.d': 'AI-integrated system for route optimization and automated reports.', 'f6.t': 'AI-Powered',
+                'bar.q': '"Not just a delivery service — we are the nervous system of your business logistics."', 'bar.cta': 'Talk to Us Now',
+                'why.eye': 'Our Advantages', 'why.t1': 'Why', 'why.t2': 'choose TSC?',
+                'w1.n': 'Trusted Experience', 'w1.d': 'Over 10 years serving diverse industries with a 98% customer satisfaction rate.',
+                'w2.n': 'Modern Fleet', 'w2.d': 'Well-maintained vehicles, average age under 3 years. Zero surprise breakdowns.',
+                'w3.n': 'Professional Drivers', 'w3.d': 'All drivers trained, certified, and background-checked. Safety is a culture.',
+                'w4.n': 'Transparent Pricing', 'w4.d': 'Clear rates, no hidden costs. Detailed invoices for every delivery.',
+                'proc.eye': 'How It Works', 'proc.title': 'Start in 4 Steps',
+                'p1.n': 'Contact Us', 'p1.d': 'Via WhatsApp, phone, or website to consult your logistics needs',
+                'p2.n': 'Custom Quote', 'p2.d': 'Best pricing based on your delivery volume and frequency, no markup',
+                'p3.n': 'Confirm Order', 'p3.d': "Approve the quote, schedule pickup, and we'll take care of the rest",
+                'p4.n': 'Track & Delivery', 'p4.d': 'Real-time monitoring, on-time delivery, auto-reports to your email',
+                'fleet.eye': 'Fleet & Coverage', 'fleet.t1': 'Complete', 'fleet.t2': 'Fleet Options',
+                'fleet.sub': 'From 500kg to 20 tons. All available, maintained, and GPS-tracked.',
+                'fc1.n': 'Blind Van & Box', 'fc1.d': 'Ideal for retail and e-commerce. Distribution to stores and end-customers.', 'fc1.c': '📦 500 kg – 1 ton',
+                'fc2.n': 'CDD & Single Axle', 'fc2.d': 'Medium-scale deliveries. Regional and inter-city at peak efficiency.', 'fc2.c': '📦 2 – 4 tons',
+                'fc3.n': 'Fuso & Wing Box', 'fc3.d': 'Heavy industrial fleet. Active GPS, full insurance, massive capacity.', 'fc3.c': '📦 6 – 20 tons',
+                'fc4.n': 'Greater Jakarta', 'fc4.d': 'Jakarta, Bogor, Depok, Tangerang, Bekasi — same-day delivery available.', 'fc4.c': '⚡ Same-day',
+                'fc5.n': 'All Indonesia', 'fc5.d': 'National distribution across the archipelago. Regular schedules to all major cities.', 'fc5.c': '🌐 Nationwide',
+                'fleet.hint': '← Swipe to see more →',
+                'ab.eye': 'About Us', 'ab.yrs': 'Years of Experience',
+                'ab.pull': 'Building trust, one delivery at a time.',
+                'ab.p1': 'PT Tata Sanjaya Cakrawala is a logistics company committed to providing the best transportation and distribution solutions — not just delivering goods, but sustaining our clients\' business operations.',
+                'ab.p2': 'Backed by a modern fleet, integrated digital systems, and an experienced professional team, we have become the logistics partner of choice for 100+ companies across various industry sectors.',
+                'ab.f1.n': 'Certified', 'ab.f1.d': 'ISO 9001:2015 certified',
+                'ab.f2.n': 'Full Insurance', 'ab.f2.d': 'All shipments are insured',
+                'ab.f3.n': 'Professional Team', 'ab.f3.d': 'Trained & certified staff',
+                'ab.f4.n': 'Stable Growth', 'ab.f4.d': '40% growth year-over-year',
+                'cta.eye': 'Start Now', 'cta.t1': 'Ready to Move', 'cta.t2': 'Faster?',
+                'cta.sub': 'Join 100+ companies that have trusted TSC. Free consultation, quote within 24 hours.',
+                'cta.wa': 'Chat via WhatsApp', 'cta.mail': 'Send Email',
+                'foot.about': 'Your Best Logistic Partner — modern transportation and distribution for Indonesian business.',
+                'foot.h1': 'Services', 'foot.h2': 'Company', 'foot.h3': 'Contact',
+                'foot.career': 'Careers', 'foot.blog': 'Blog', 'foot.faq': 'FAQ', 'foot.hrs': '24 Hours Nonstop',
+            }
+        };
+
+        let lang = 'id', theme = 'dark';
+
+        function syncLangButtons(l) {
+            ['bID', 'bEN', 'bID_m', 'bEN_m'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('on', el.id.toLowerCase().includes(l));
+            });
+        }
+
+        function syncThemeIcons() {
+            const icon = theme === 'dark' ? '🌙' : '☀️';
+            ['tico', 'tico_m'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = icon;
+            });
+        }
+
+        function setLang(l) {
+            lang = l;
+            const t = T[l];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const k = el.getAttribute('data-i18n');
+                if (t[k] !== undefined) el.textContent = t[k];
+            });
+            syncLangButtons(l);
+            document.documentElement.lang = l;
+            buildTicker();
+            try { localStorage.setItem('tsc-lang', l); } catch (e) { }
+        }
+
+        function toggleTheme() {
+            theme = theme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+            syncThemeIcons();
+            try { localStorage.setItem('tsc-theme', theme); } catch (e) { }
+        }
+
+        function buildTicker() {
+            const id = ['📦 10.000+ pengiriman bulan ini', '⚡ Response time < 2 jam', '🚚 Armada GPS real-time', '🛡️ Asuransi semua pengiriman', '📍 Jabodetabek & seluruh Indonesia', '✅ 99.8% on-time delivery', '💼 100+ klien aktif', '🏆 10+ tahun pengalaman'];
+            const en = ['📦 10,000+ deliveries this month', '⚡ Response time < 2 hours', '🚚 GPS real-time fleet', '🛡️ All shipments insured', '📍 Jabodetabek & all Indonesia', '✅ 99.8% on-time delivery', '💼 100+ active clients', '🏆 10+ years experience'];
+            const items = lang === 'id' ? id : en;
+            document.getElementById('ticker').innerHTML = [...items, ...items].map(s => `<span class="ti"><span class="d"></span>${s}</span>`).join('');
+        }
+
+        (function init() {
+            try {
+                const st = localStorage.getItem('tsc-theme');
+                if (st) { theme = st; document.documentElement.setAttribute('data-theme', st); }
+                const sl = localStorage.getItem('tsc-lang');
+                if (sl) { lang = sl; setLang(sl); } else { buildTicker(); }
+            } catch (e) { buildTicker(); }
+            syncLangButtons(lang);
+            syncThemeIcons();
+        })();
+
+        const hamb = document.getElementById('hamb');
+        const drawer = document.getElementById('drawer');
+        const overlay = document.getElementById('overlay');
+        const openD = () => { hamb.classList.add('x'); drawer.classList.add('open'); overlay.style.display = 'block'; document.body.style.overflow = 'hidden'; };
+        const closeD = () => { hamb.classList.remove('x'); drawer.classList.remove('open'); overlay.style.display = 'none'; document.body.style.overflow = ''; };
+        hamb.addEventListener('click', () => drawer.classList.contains('open') ? closeD() : openD());
+        overlay.addEventListener('click', closeD);
+        drawer.querySelectorAll('a').forEach(a => a.addEventListener('click', closeD));
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeD(); });
+
+        window.addEventListener('scroll', () => {
+            document.getElementById('nav').classList.toggle('scrolled', scrollY > 40);
+            document.getElementById('stbtn').classList.toggle('show', scrollY > 400);
+        }, { passive: true });
+
+        document.getElementById('stbtn').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+        document.querySelectorAll('a[href^="#"]').forEach(a => {
+            a.addEventListener('click', e => {
+                const h = a.getAttribute('href');
+                if (h === '#') return;
+                e.preventDefault();
+                const t = document.querySelector(h);
+                if (t) window.scrollTo({ top: t.getBoundingClientRect().top + scrollY - 64, behavior: 'smooth' });
+            });
+        });
+
+        const ro = new IntersectionObserver(entries => {
+            entries.forEach((e, i) => {
+                if (e.isIntersecting) { setTimeout(() => e.target.classList.add('in'), i * 60); ro.unobserve(e.target); }
+            });
+        }, { threshold: 0.06, rootMargin: '0px 0px -40px 0px' });
+        document.querySelectorAll('.rv,.rl').forEach(el => ro.observe(el));
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/app-inventori/sw.js', { scope: '/app-inventori/' })
+                    .then(r => console.log('SW:', r.scope)).catch(() => { });
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,102 @@
+/**
+ * ========================================
+ * NOTIFICATION SYSTEM - CUSTOM STYLES
+ * ========================================
+ */
+
+/* Notification Badge */
+.badge-counter {
+    position: absolute;
+    transform: scale(0.7);
+    transform-origin: top right;
+    right: .25rem;
+    top: -.25rem;
+}
+
+/* Notification Item */
+.notification-item {
+    padding: 1rem;
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.notification-item:hover {
+    background-color: #f8f9fc;
+    border-left-color: #4e73df;
+}
+
+.notification-item.unread {
+    background-color: #eef2ff;
+    border-left-color: #4e73df;
+}
+
+.notification-item.unread:hover {
+    background-color: #e3ecff;
+}
+
+/* Icon Circle */
+.icon-circle {
+    height: 2.5rem;
+    width: 2.5rem;
+    border-radius: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Dropdown Header */
+.dropdown-header {
+    background: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+    color: white;
+    font-weight: bold;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.35rem 0.35rem 0 0;
+}
+
+/* Notification List */
+#notificationList {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Custom Scrollbar */
+#notificationList::-webkit-scrollbar {
+    width: 6px;
+}
+
+#notificationList::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+#notificationList::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+#notificationList::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Animation */
+@keyframes bellShake {
+    0% { transform: rotate(0); }
+    15% { transform: rotate(15deg); }
+    30% { transform: rotate(-15deg); }
+    45% { transform: rotate(10deg); }
+    60% { transform: rotate(-10deg); }
+    75% { transform: rotate(5deg); }
+    85% { transform: rotate(-5deg); }
+    100% { transform: rotate(0); }
+}
+
+.fa-bell.shake {
+    animation: bellShake 0.5s ease-in-out;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dropdown-list {
+        min-width: 300px !important;
+        max-width: 90vw;
+    }
+}

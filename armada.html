@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Armada - TSC</title>
+    <style>
+        :root {
+            --bg: #0C0C0E;
+            --fg: #F2F2EF;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+        }
+
+        .fleet-title {
+            font-family: 'Instrument Serif', serif;
+            font-size: 2rem;
+        }
+
+        .fleet-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .fleet-item {
+            padding: 10px;
+            border: 1px solid var(--fg);
+            border-radius: 4px;
+        }
+
+        .fleet-capacity {
+            background: #25D366;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<section id="fleet">
+    <h1 class="fleet-title">Armada Terbaik Kami</h1>
+    <div class="fleet-list">
+        <div class="fleet-item">
+            <h3>Blind Van & Box</h3>
+            <p>Ideal untuk pengiriman retail dan e-commerce. Distribusi ke toko dan end-customer.</p>
+            <span class="fleet-capacity">📦 500 kg – 1 ton</span>
+        </div>
+        <div class="fleet-item">
+            <h3>CDD & Truk Engkel</h3>
+            <p>Pengiriman skala menengah. Regional dan antar kota dengan efisiensi maksimal.</p>
+            <span class="fleet-capacity">📦 2 – 4 ton</span>
+        </div>
+        <div class="fleet-item">
+            <h3>Fuso & Wing Box</h3>
+            <p>Armada industri besar. GPS tracking aktif, asuransi penuh, kapasitas masif.</p>
+            <span class="fleet-capacity">📦 6 – 20 ton</span>
+        </div>
+    </div>
+</section>
+
+</body>
+</html>

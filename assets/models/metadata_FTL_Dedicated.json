@@ -1,0 +1,111 @@
+{
+  "sheet": "FTL Dedicated",
+  "features": [
+    "Periode",
+    "Origin",
+    "Dest1",
+    "Dest2",
+    "Truck Type",
+    "Vendor",
+    "Trip/Month",
+    "Trip Cost from User",
+    "Biaya Lain2 (Multidrop,TKBM,Parkir)",
+    "Rate User-TSC",
+    "Trip Cost to Vendor",
+    "Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)",
+    "Rate TSC-Vendor"
+  ],
+  "categorical": [
+    "Periode",
+    "Origin",
+    "Dest1",
+    "Dest2",
+    "Truck Type",
+    "Vendor"
+  ],
+  "numerical": [
+    "Trip/Month",
+    "Trip Cost from User",
+    "Biaya Lain2 (Multidrop,TKBM,Parkir)",
+    "Rate User-TSC",
+    "Trip Cost to Vendor",
+    "Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)",
+    "Rate TSC-Vendor"
+  ],
+  "label_encoders": {
+    "Periode": {
+      "classes": [
+        "FEBRUARI",
+        "Maret"
+      ]
+    },
+    "Origin": {
+      "classes": [
+        "Bandung Kopo DC",
+        "Depok DC",
+        "Transit Point Bekasi DC",
+        "Transit Point Bogor DC",
+        "Transit Point Kosambi DC",
+        "Transit Point Logos DC"
+      ]
+    },
+    "Dest1": {
+      "classes": [
+        "Bekasi Barat 3 First Mile Hub",
+        "Bekasi DC",
+        "Bekasi Timur First Mile Hub",
+        "Bekasi Utara 3 First Mile Hub",
+        "Cibabat Hub",
+        "Cibinong Bogor Hub",
+        "Cilodong Hub",
+        "Cimanggis Hub",
+        "Citeureup Hub",
+        "Medan Satria First Mile Hub",
+        "Sunter DC",
+        "Tarumajaya 2 First Mile Hub",
+        "Tarumajaya First Mile Hub"
+      ]
+    },
+    "Dest2": {
+      "classes": [
+        "Bandung Kopo DC",
+        "Depok DC",
+        "Transit Point Bekasi DC",
+        "nan"
+      ]
+    },
+    "Truck Type": {
+      "classes": [
+        "CDD L",
+        "CDE L",
+        "WB"
+      ]
+    },
+    "Vendor": {
+      "classes": [
+        "BOCIL",
+        "DJM",
+        "EVFEL",
+        "FJL",
+        "HASNA",
+        "PJM",
+        "PSD",
+        "STEVEN"
+      ]
+    }
+  },
+  "num_medians": {
+    "Trip/Month": 30.0,
+    "Trip Cost from User": 1900000.0,
+    "Biaya Lain2 (Multidrop,TKBM,Parkir)": 2000000.0,
+    "Rate User-TSC": 666666.6667,
+    "Trip Cost to Vendor": 700000.0,
+    "Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)": 700000.0,
+    "Rate TSC-Vendor": 700000.0
+  },
+  "eval": {
+    "mae": 19552.43,
+    "r2": 0.9625,
+    "mape": 2.3486
+  }
+}

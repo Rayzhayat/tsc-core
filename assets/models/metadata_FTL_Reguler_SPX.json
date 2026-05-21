@@ -1,0 +1,137 @@
+{
+  "sheet": "FTL Reguler SPX",
+  "features": [
+    "Month",
+    "Division",
+    "Origin",
+    "Dest1",
+    "Type Unit",
+    "Fulfillment Status",
+    "Trip Cost from User",
+    "Multidrop Inner",
+    "Multidrop Outer",
+    "Charge overnight",
+    "Rate User-TSC",
+    "Trip Cost to Vendor",
+    "PPH",
+    "Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)",
+    "Rate TSC-Vendor"
+  ],
+  "categorical": [
+    "Month",
+    "Division",
+    "Origin",
+    "Dest1",
+    "Type Unit",
+    "Fulfillment Status"
+  ],
+  "numerical": [
+    "Trip Cost from User",
+    "Multidrop Inner",
+    "Multidrop Outer",
+    "Charge overnight",
+    "Rate User-TSC",
+    "Trip Cost to Vendor",
+    "PPH",
+    "Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)",
+    "Rate TSC-Vendor"
+  ],
+  "label_encoders": {
+    "Month": {
+      "classes": [
+        "April",
+        "Februari",
+        "Januari",
+        "Maret",
+        "May"
+      ]
+    },
+    "Division": {
+      "classes": [
+        "LH"
+      ]
+    },
+    "Origin": {
+      "classes": [
+        "Bandung DC",
+        "Banyumas DC",
+        "Bekasi 3 DC",
+        "Bekasi DC",
+        "Benowo 3 DC",
+        "Cakung 2 DC",
+        "Cakung 4 DC",
+        "Cikarang Barat DC",
+        "Cirebon DC",
+        "Pekalongan DC",
+        "Rancaekek DC",
+        "Sidoarjo 2 DC",
+        "Sidoarjo DC",
+        "Sukoharjo DC",
+        "Tegal 2 DC",
+        "Tegal DC",
+        "Transit Point Bekasi DC",
+        "Transit Point Kalideres DC",
+        "Transit Point Karawaci DC",
+        "Transit Point Kosambi 2 DC",
+        "Transit Point Logos DC",
+        "Transit Point Serang DC",
+        "Transit Point Sunter 2 DC",
+        "Transit Point Sunter DC",
+        "Virtual Semarang DC",
+        "Yogyakarta DC"
+      ]
+    },
+    "Dest1": {
+      "classes": [
+        "Bekasi 3 DC",
+        "Bekasi DC",
+        "Cakung 2 DC",
+        "Cakung 5 DC",
+        "Cakung DC",
+        "Cakung RDC",
+        "Cikarang Barat DC",
+        "Cileungsi DC",
+        "Cinambo DC",
+        "Depok DC",
+        "Jambi DC",
+        "Kebumen DC",
+        "Kosambi 2 DC",
+        "Malang DC",
+        "Ngawi DC",
+        "Pekalongan 2 DC",
+        "Pekalongan DC",
+        "Solo DC",
+        "Sunter DC",
+        "Tapos DC",
+        "Tegal DC"
+      ]
+    },
+    "Type Unit": {
+      "classes": [
+        "CDD L",
+        "WB"
+      ]
+    },
+    "Fulfillment Status": {
+      "classes": [
+        "Fulfilled"
+      ]
+    }
+  },
+  "num_medians": {
+    "Trip Cost from User": 3090000.0,
+    "Multidrop Inner": 350000.0,
+    "Multidrop Outer": 450000.0,
+    "Charge overnight": 2500000.0,
+    "Rate User-TSC": 3440000.0,
+    "Trip Cost to Vendor": 2300000.0,
+    "PPH": NaN,
+    "Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)": 1000000.0,
+    "Rate TSC-Vendor": 2700000.0
+  },
+  "eval": {
+    "mae": 29144.39,
+    "r2": 0.9746,
+    "mape": 4.0648
+  }
+}

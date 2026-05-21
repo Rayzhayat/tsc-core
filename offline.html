@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TSC — Tidak Ada Koneksi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --navy: #0A1628;
+            --navy-mid: #0F1F3D;
+            --electric: #2563EB;
+            --electric-bright: #3B82F6;
+            --electric-glow: #60A5FA;
+            --gold: #F59E0B;
+            --gold-light: #FCD34D;
+            --white: #F8FAFC;
+            --muted: rgba(248, 250, 252, 0.5);
+            --border: rgba(248, 250, 252, 0.1);
+            --ghost: rgba(248, 250, 252, 0.06);
+
+            /* Responsive spacing scale */
+            --space-xs: clamp(0.4rem, 1vw, 0.6rem);
+            --space-sm: clamp(0.75rem, 2vw, 1rem);
+            --space-md: clamp(1.25rem, 3vw, 2rem);
+            --space-lg: clamp(2rem, 5vw, 3rem);
+            --space-xl: clamp(2.5rem, 6vw, 4rem);
+        }
+
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            height: 100%;
+            /* respect safe-area on notched phones */
+            padding:
+                env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        body {
+            min-height: 100%;
+            font-family: 'DM Sans', sans-serif;
+            background: var(--navy);
+            color: var(--white);
+            overflow-x: hidden;
+        }
+
+        /* ── Background grid ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(37, 99, 235, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(37, 99, 235, 0.06) 1px, transparent 1px);
+            background-size: 50px 50px;
+            mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 0%, transparent 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Noise overlay ── */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.5;
+        }
+
+        /* ── Orbs ── */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(90px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .orb-1 {
+            width: clamp(260px, 50vw, 500px);
+            height: clamp(260px, 50vw, 500px);
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.18) 0%, transparent 70%);
+            top: -15%;
+            left: -10%;
+            animation: drift1 12s ease-in-out infinite;
+        }
+
+        .orb-2 {
+            width: clamp(200px, 40vw, 400px);
+            height: clamp(200px, 40vw, 400px);
+            background: radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%);
+            bottom: -10%;
+            right: -10%;
+            animation: drift2 14s ease-in-out infinite;
+        }
+
+        .orb-3 {
+            width: clamp(160px, 30vw, 300px);
+            height: clamp(160px, 30vw, 300px);
+            background: radial-gradient(circle, rgba(96, 165, 250, 0.12) 0%, transparent 70%);
+            top: 50%;
+            right: 15%;
+            animation: drift3 10s ease-in-out infinite 2s;
+        }
+
+        @keyframes drift1 {
+
+            0%,
+            100% {
+                transform: translate(0, 0)
+            }
+
+            50% {
+                transform: translate(40px, 30px)
+            }
+        }
+
+        @keyframes drift2 {
+
+            0%,
+            100% {
+                transform: translate(0, 0)
+            }
+
+            50% {
+                transform: translate(-30px, -20px)
+            }
+        }
+
+        @keyframes drift3 {
+
+            0%,
+            100% {
+                transform: translate(0, 0)
+            }
+
+            50% {
+                transform: translate(20px, -30px)
+            }
+        }
+
+        /* ── Main layout ── */
+        .container {
+            position: relative;
+            z-index: 1;
+            min-height: 100dvh;
+            /* dynamic viewport height – works on mobile browsers with nav bars */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-md) var(--space-sm);
+            text-align: center;
+            gap: 0;
+            /* gaps handled individually with margin-bottom */
+        }
+
+        /* ── Logo ── */
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: var(--space-lg);
+            animation: fadeDown 0.6s ease both;
+        }
+
+        .logo-mark {
+            width: clamp(36px, 8vw, 44px);
+            height: clamp(36px, 8vw, 44px);
+            background: linear-gradient(135deg, var(--electric), var(--electric-glow));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: clamp(0.75rem, 2vw, 1rem);
+            color: white;
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.4);
+            flex-shrink: 0;
+        }
+
+        .logo-text {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: clamp(0.8rem, 2.2vw, 1.1rem);
+            letter-spacing: 0.5px;
+            color: var(--white);
+            white-space: nowrap;
+        }
+
+        /* ── Illustration ── */
+        .illustration {
+            position: relative;
+            width: clamp(140px, 38vw, 180px);
+            height: clamp(140px, 38vw, 180px);
+            margin: 0 auto var(--space-md);
+            animation: fadeUp 0.7s ease 0.1s both;
+        }
+
+        .truck-svg {
+            width: clamp(90px, 24vw, 120px);
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: truckRock 3s ease-in-out infinite;
+        }
+
+        @keyframes truckRock {
+
+            0%,
+            100% {
+                transform: translateX(-50%) rotate(-1deg);
+            }
+
+            50% {
+                transform: translateX(-50%) rotate(1deg);
+            }
+        }
+
+        .signal-wrap {
+            position: absolute;
+            top: 8px;
+            right: 20px;
+        }
+
+        .signal-bar {
+            position: absolute;
+            border: 2.5px solid var(--electric-glow);
+            border-radius: 50%;
+            border-bottom-color: transparent;
+            border-left-color: transparent;
+            animation: signalPulse 2s ease-in-out infinite;
+            opacity: 0;
+        }
+
+        .signal-bar:nth-child(1) {
+            width: 16px;
+            height: 16px;
+            top: 12px;
+            left: -8px;
+            animation-delay: 0s;
+        }
+
+        .signal-bar:nth-child(2) {
+            width: 28px;
+            height: 28px;
+            top: 6px;
+            left: -14px;
+            animation-delay: 0.2s;
+        }
+
+        .signal-bar:nth-child(3) {
+            width: 42px;
+            height: 42px;
+            top: -1px;
+            left: -21px;
+            animation-delay: 0.4s;
+        }
+
+        @keyframes signalPulse {
+            0% {
+                opacity: 0;
+                transform: scale(0.8) rotate(-45deg);
+            }
+
+            30% {
+                opacity: 0.9;
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(1.1) rotate(-45deg);
+            }
+        }
+
+        .signal-x {
+            position: absolute;
+            top: -2px;
+            right: -8px;
+            width: 20px;
+            height: 20px;
+            animation: xPop 0.5s ease 0.8s both;
+        }
+
+        .signal-x::before,
+        .signal-x::after {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 2.5px;
+            background: #EF4444;
+            border-radius: 2px;
+            top: 50%;
+            left: 50%;
+        }
+
+        .signal-x::before {
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        .signal-x::after {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+
+        @keyframes xPop {
+            from {
+                opacity: 0;
+                transform: scale(0);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .road {
+            position: absolute;
+            bottom: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            height: 3px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .road::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: repeating-linear-gradient(90deg,
+                    var(--electric) 0px, var(--electric) 20px,
+                    transparent 20px, transparent 40px);
+            animation: roadScroll 1.5s linear infinite;
+            opacity: 0.4;
+        }
+
+        @keyframes roadScroll {
+            to {
+                left: 0%;
+            }
+        }
+
+        /* ── Status badge ── */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 100px;
+            padding: 0.4rem 1rem;
+            font-size: clamp(0.7rem, 1.8vw, 0.76rem);
+            font-weight: 500;
+            color: #FCA5A5;
+            margin-bottom: var(--space-sm);
+            letter-spacing: 0.5px;
+            animation: fadeUp 0.7s ease 0.2s both;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            background: #EF4444;
+            border-radius: 50%;
+            animation: blink 1.2s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.3
+            }
+        }
+
+        /* ── Heading ── */
+        h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(1.6rem, 6vw, 2.8rem);
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            line-height: 1.1;
+            margin-bottom: var(--space-sm);
+            animation: fadeUp 0.7s ease 0.3s both;
+        }
+
+        .highlight {
+            background: linear-gradient(135deg, var(--electric-bright), var(--gold-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ── Subtitle ── */
+        p.subtitle {
+            color: var(--muted);
+            font-size: clamp(0.82rem, 2.2vw, 1rem);
+            font-weight: 300;
+            line-height: 1.8;
+            max-width: min(400px, 90vw);
+            margin: 0 auto var(--space-md);
+            animation: fadeUp 0.7s ease 0.4s both;
+        }
+
+        /* ── Retry button ── */
+        .btn-retry {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: clamp(0.7rem, 2vw, 0.9rem) clamp(1.4rem, 4vw, 2rem);
+            background: var(--electric);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: clamp(0.85rem, 2.2vw, 0.95rem);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
+            animation: fadeUp 0.7s ease 0.5s both;
+            position: relative;
+            overflow: hidden;
+            /* Ensure min tap target size (44px) */
+            min-height: 44px;
+            touch-action: manipulation;
+        }
+
+        .btn-retry::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .btn-retry:hover::before {
+            opacity: 1;
+        }
+
+        .btn-retry:hover {
+            background: var(--electric-bright);
+            transform: translateY(-3px);
+            box-shadow: 0 16px 36px rgba(37, 99, 235, 0.5);
+        }
+
+        .btn-retry:active {
+            transform: translateY(0);
+        }
+
+        .icon-retry {
+            font-size: 1.1rem;
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+
+        /* ── Divider ── */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            width: 100%;
+            max-width: min(340px, 90vw);
+            margin: var(--space-md) auto;
+            animation: fadeUp 0.7s ease 0.6s both;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .divider span {
+            color: var(--muted);
+            font-size: clamp(0.68rem, 1.8vw, 0.75rem);
+            white-space: nowrap;
+        }
+
+        /* ── Tips card ── */
+        .tips-card {
+            background: var(--ghost);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: clamp(1rem, 3vw, 1.4rem) clamp(1.1rem, 3.5vw, 1.6rem);
+            width: 100%;
+            max-width: min(340px, 90vw);
+            text-align: left;
+            animation: fadeUp 0.7s ease 0.7s both;
+        }
+
+        .tips-card h3 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(0.65rem, 1.8vw, 0.78rem);
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 0.9rem;
+        }
+
+        .tip-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 0.65rem;
+        }
+
+        .tip-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .tip-icon {
+            font-size: 0.9rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .tip-text {
+            font-size: clamp(0.78rem, 2vw, 0.83rem);
+            color: var(--muted);
+            font-weight: 300;
+            line-height: 1.6;
+        }
+
+        /* ── Footer note ── */
+        .footer-note {
+            margin-top: var(--space-md);
+            font-size: clamp(0.72rem, 1.8vw, 0.78rem);
+            color: var(--muted);
+            opacity: 0.6;
+            animation: fadeUp 0.7s ease 0.8s both;
+            /* allow wrapping on narrow screens */
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.3rem 0.5rem;
+        }
+
+        .footer-note a {
+            color: var(--electric-glow);
+            text-decoration: none;
+            transition: opacity 0.2s;
+            /* bigger tap target */
+            padding: 2px 0;
+        }
+
+        .footer-note a:hover {
+            opacity: 0.8;
+        }
+
+        .footer-sep {
+            opacity: 0.4;
+        }
+
+        /* ── Animations ── */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeDown {
+            from {
+                opacity: 0;
+                transform: translateY(-16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Extra small phones (≤ 360px) ── */
+        @media (max-width: 360px) {
+            .logo-text {
+                display: none;
+            }
+
+            /* show just the mark */
+            h1 {
+                letter-spacing: -0.5px;
+            }
+
+            .signal-bar:nth-child(3) {
+                display: none;
+            }
+
+            /* de-clutter */
+        }
+
+        /* ── Landscape + small height ── */
+        @media (max-height: 600px) and (orientation: landscape) {
+            .illustration {
+                display: none;
+            }
+
+            /* reclaim vertical space */
+            .logo {
+                margin-bottom: var(--space-sm);
+            }
+
+            h1 {
+                font-size: clamp(1.3rem, 4vw, 2rem);
+            }
+        }
+
+        /* ── Large screens — keep content centered and not too wide ── */
+        @media (min-width: 768px) {
+            .container {
+                padding: 3rem 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="container">
+
+        <!-- Logo -->
+        <div class="logo">
+            <div class="logo-mark">TSC</div>
+            <span class="logo-text">PT Tata Sanjaya Cakrawala</span>
+        </div>
+
+        <!-- Illustration -->
+        <div class="illustration">
+            <div class="signal-wrap">
+                <div class="signal-bar"></div>
+                <div class="signal-bar"></div>
+                <div class="signal-bar"></div>
+                <div class="signal-x"></div>
+            </div>
+
+            <svg class="truck-svg" viewBox="0 0 120 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4" y="22" width="72" height="34" rx="4" fill="#162845" stroke="#2563EB" stroke-width="1.5" />
+                <rect x="76" y="30" width="38" height="26" rx="3" fill="#0F1F3D" stroke="#2563EB" stroke-width="1.5" />
+                <rect x="82" y="34" width="22" height="14" rx="2" fill="#1E3A6E" stroke="#3B82F6" stroke-width="1" />
+                <text x="28" y="45" font-family="Arial" font-weight="bold" font-size="11" fill="#60A5FA"
+                    text-anchor="middle">TSC</text>
+                <rect x="4" y="38" width="72" height="2" fill="#2563EB" opacity="0.4" />
+                <circle cx="26" cy="58" r="8" fill="#0A1628" stroke="#3B82F6" stroke-width="2" />
+                <circle cx="26" cy="58" r="3" fill="#2563EB" />
+                <circle cx="88" cy="58" r="8" fill="#0A1628" stroke="#3B82F6" stroke-width="2" />
+                <circle cx="88" cy="58" r="3" fill="#2563EB" />
+                <rect x="111" y="38" width="5" height="6" rx="1" fill="#FCD34D" opacity="0.8" />
+                <circle cx="8" cy="20" r="3" fill="#162845" stroke="#2563EB" stroke-width="1" opacity="0.5">
+                    <animate attributeName="cy" values="20;10;2" dur="2s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.5;0.2;0" dur="2s" repeatCount="indefinite" />
+                    <animate attributeName="r" values="3;5;7" dur="2s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="8" cy="20" r="3" fill="#162845" stroke="#2563EB" stroke-width="1" opacity="0.5">
+                    <animate attributeName="cy" values="20;10;2" dur="2s" begin="0.7s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.5;0.2;0" dur="2s" begin="0.7s"
+                        repeatCount="indefinite" />
+                    <animate attributeName="r" values="3;5;7" dur="2s" begin="0.7s" repeatCount="indefinite" />
+                </circle>
+            </svg>
+
+            <div class="road"></div>
+        </div>
+
+        <!-- Status badge -->
+        <div class="status-badge" id="statusBadge">
+            <div class="status-dot"></div>
+            Koneksi Internet Terputus
+        </div>
+
+        <!-- Heading -->
+        <h1>Sinyal <span class="highlight">Hilang</span>,<br>TSC Tetap Siap</h1>
+
+        <!-- Subtitle -->
+        <p class="subtitle">
+            Seperti armada kami yang selalu menemukan jalan — periksa koneksimu dan coba lagi.
+        </p>
+
+        <!-- Retry button -->
+        <button class="btn-retry" id="retryBtn" onclick="retryConnection()">
+            <span class="icon-retry" id="retryIcon">↻</span>
+            Coba Lagi
+        </button>
+
+        <!-- Divider -->
+        <div class="divider">
+            <span>Sementara itu, pastikan</span>
+        </div>
+
+        <!-- Tips card -->
+        <div class="tips-card">
+            <h3>Kemungkinan Penyebab</h3>
+            <div class="tip-item">
+                <span class="tip-icon">📶</span>
+                <span class="tip-text">WiFi atau data seluler tidak aktif</span>
+            </div>
+            <div class="tip-item">
+                <span class="tip-icon">🔄</span>
+                <span class="tip-text">Coba restart router atau aktifkan mode pesawat lalu matikan kembali</span>
+            </div>
+            <div class="tip-item">
+                <span class="tip-icon">📍</span>
+                <span class="tip-text">Sinyal lemah — pindah ke area dengan koneksi lebih baik</span>
+            </div>
+        </div>
+
+        <!-- Footer note -->
+        <p class="footer-note">
+            <span>Butuh bantuan mendesak?</span>
+            <a href="https://wa.me/6281310879577">WhatsApp kami</a>
+            <span class="footer-sep">·</span>
+            <a href="mailto:tatasanjayacakrawala@gmail.com">Email kami</a>
+        </p>
+
+    </div>
+
+    <script>
+        function retryConnection() {
+            const btn = document.getElementById('retryBtn');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span style="display:inline-block;animation:spin 0.8s linear infinite">↻</span> Memeriksa...';
+
+            setTimeout(() => {
+                if (navigator.onLine) {
+                    btn.innerHTML = '✓ Terhubung! Memuat ulang...';
+                    btn.style.background = '#16A34A';
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="icon-retry">↻</span> Coba Lagi';
+                    btn.style.animation = 'shake 0.4s ease';
+                    setTimeout(() => btn.style.animation = '', 500);
+                }
+            }, 1800);
+        }
+
+        // Auto-recover when connection comes back
+        window.addEventListener('online', () => {
+            const badge = document.getElementById('statusBadge');
+            badge.innerHTML = '<div style="width:7px;height:7px;background:#22C55E;border-radius:50%;flex-shrink:0"></div> Koneksi Pulih!';
+            badge.style.cssText += ';background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.3);color:#86EFAC';
+            setTimeout(() => window.location.reload(), 1000);
+        });
+
+        // Inject keyframes dynamically
+        const s = document.createElement('style');
+        s.textContent = `
+            @keyframes spin  { to { transform: rotate(360deg); } }
+            @keyframes shake {
+                0%,100% { transform: translateX(0); }
+                20%     { transform: translateX(-8px); }
+                40%     { transform: translateX(8px); }
+                60%     { transform: translateX(-5px); }
+                80%     { transform: translateX(5px); }
+            }
+        `;
+        document.head.appendChild(s);
+    </script>
+
+</body>
+
+</html>

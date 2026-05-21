@@ -1,0 +1,90 @@
+{
+  "sheet": "FTL A1 SPX",
+  "features": [
+    "Periode",
+    "Customer",
+    "Origin",
+    "Truck Type",
+    "Vendor",
+    "Status",
+    "Trip Cost from User",
+    "Biaya Lain2 (Multidrop,TKBM,Parkir)",
+    "Rate User-TSC",
+    "Trip Cost to Vendor",
+    "Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)",
+    "Rate TSC-Vendor"
+  ],
+  "categorical": [
+    "Periode",
+    "Customer",
+    "Origin",
+    "Truck Type",
+    "Vendor",
+    "Status"
+  ],
+  "numerical": [
+    "Trip Cost from User",
+    "Biaya Lain2 (Multidrop,TKBM,Parkir)",
+    "Rate User-TSC",
+    "Trip Cost to Vendor",
+    "Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)",
+    "Rate TSC-Vendor"
+  ],
+  "label_encoders": {
+    "Periode": {
+      "classes": [
+        "FEBRUARY",
+        "JANUARI",
+        "MARET"
+      ]
+    },
+    "Customer": {
+      "classes": [
+        "ATJ",
+        "FJL",
+        "TSF"
+      ]
+    },
+    "Origin": {
+      "classes": [
+        "Bandung DC",
+        "SIDOARJO DC",
+        "Sukoharjo DC",
+        "Tapos DC",
+        "Tasikmalaya DC",
+        "Virtual Tasikmalaya DC",
+        "WEARHOUSE INVENTORY DC",
+        "Yogyakarta DC"
+      ]
+    },
+    "Truck Type": {
+      "classes": [
+        "CDDL",
+        "WB"
+      ]
+    },
+    "Vendor": {
+      "classes": [
+        "OWN UNIT"
+      ]
+    },
+    "Status": {
+      "classes": [
+        "nan"
+      ]
+    }
+  },
+  "num_medians": {
+    "Trip Cost from User": 1775000.0,
+    "Biaya Lain2 (Multidrop,TKBM,Parkir)": NaN,
+    "Rate User-TSC": 1775000.0,
+    "Trip Cost to Vendor": 1200000.0,
+    "Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)": 200000.0,
+    "Rate TSC-Vendor": 1275000.0
+  },
+  "eval": {
+    "mae": 177335.3,
+    "r2": 0.0614,
+    "mape": 40.3905
+  }
+}

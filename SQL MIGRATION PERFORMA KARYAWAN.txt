@@ -1,0 +1,224 @@
+-- ============================================================
+-- MIGRATION: HR Module Enhancement
+-- TSC Core System - PT Tata Sanjaya Cakrawala
+-- ============================================================
+
+-- ============================================================
+-- 1. ALTER TABLE pengguna
+--    Tambah kolom HR ke tabel existing
+-- ============================================================
+
+ALTER TABLE `pengguna`
+    ADD COLUMN `golongan`            VARCHAR(10)  NULL DEFAULT NULL         COMMENT 'Golongan kepegawaian (1A, 2B, 3C, dst)' AFTER `user_level`,
+    ADD COLUMN `status_kepegawaian`  ENUM('Tetap','Kontrak','Magang') NULL DEFAULT NULL COMMENT 'Status kepegawaian karyawan' AFTER `golongan`,
+    ADD COLUMN `tanggal_join`        DATE         NULL DEFAULT NULL         COMMENT 'Tanggal mulai bergabung' AFTER `status_kepegawaian`,
+    ADD COLUMN `jatah_cuti`          INT          NOT NULL DEFAULT 12       COMMENT 'Total jatah cuti per tahun (hari)' AFTER `tanggal_join`,
+    ADD COLUMN `sisa_cuti`           INT          NOT NULL DEFAULT 12       COMMENT 'Sisa cuti yang belum dipakai' AFTER `jatah_cuti`;
+
+
+-- ============================================================
+-- 2. CREATE TABLE karyawan_cuti
+--    History pengajuan & approval cuti
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `karyawan_cuti` (
+    `id`            INT             NOT NULL AUTO_INCREMENT,
+    `user_id`       INT             NOT NULL                    COMMENT 'FK ke pengguna.id',
+    `tanggal_mulai` DATE            NOT NULL                    COMMENT 'Tanggal mulai cuti',
+    `tanggal_selesai` DATE          NOT NULL                    COMMENT 'Tanggal selesai cuti',
+    `jumlah_hari`   INT             NOT NULL DEFAULT 1          COMMENT 'Total hari cuti (auto hitung)',
+    `alasan`        TEXT            NOT NULL                    COMMENT 'Alasan pengajuan cuti',
+    `status`        ENUM('Pending','Disetujui','Ditolak') NOT NULL DEFAULT 'Pending',
+    `approved_by`   INT             NULL DEFAULT NULL           COMMENT 'FK ke pengguna.id (yang approve)',
+    `catatan_admin` TEXT            NULL DEFAULT NULL           COMMENT 'Catatan dari admin saat approve/tolak',
+    `created_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_user_id`       (`user_id`),
+    KEY `idx_status`        (`status`),
+    KEY `idx_tanggal_mulai` (`tanggal_mulai`),
+
+    CONSTRAINT `fk_cuti_user`     FOREIGN KEY (`user_id`)     REFERENCES `pengguna` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_cuti_approver` FOREIGN KEY (`approved_by`) REFERENCES `pengguna` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='History pengajuan cuti karyawan';
+
+
+-- ============================================================
+-- 3. CREATE TABLE karyawan_dokumen
+--    Upload dokumen karyawan (kontrak, SK, SP, dll)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `karyawan_dokumen` (
+    `id`              INT          NOT NULL AUTO_INCREMENT,
+    `user_id`         INT          NOT NULL                    COMMENT 'FK ke pengguna.id',
+    `jenis_dokumen`   ENUM(
+                        'Kontrak Kerja',
+                        'SK Pengangkatan',
+                        'SP1',
+                        'SP2',
+                        'SP3',
+                        'Surat Peringatan Lainnya',
+                        'Sertifikat',
+                        'Ijazah',
+                        'Lainnya'
+                      ) NOT NULL                              COMMENT 'Jenis dokumen',
+    `nomor_dokumen`   VARCHAR(100) NULL DEFAULT NULL          COMMENT 'Nomor/kode dokumen',
+    `tanggal_dokumen` DATE         NOT NULL                   COMMENT 'Tanggal terbit dokumen',
+    `tanggal_berlaku` DATE         NULL DEFAULT NULL          COMMENT 'Tanggal berlaku (untuk kontrak)',
+    `tanggal_expired` DATE         NULL DEFAULT NULL          COMMENT 'Tanggal kadaluarsa (untuk kontrak)',
+    `file_path`       VARCHAR(255) NOT NULL                   COMMENT 'Path file upload',
+    `file_type`       VARCHAR(50)  NULL DEFAULT NULL          COMMENT 'MIME type file',
+    `keterangan`      TEXT         NULL DEFAULT NULL          COMMENT 'Keterangan tambahan',
+    `uploaded_by`     INT          NULL DEFAULT NULL          COMMENT 'FK ke pengguna.id (yang upload)',
+    `created_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_user_id`       (`user_id`),
+    KEY `idx_jenis_dokumen` (`jenis_dokumen`),
+    KEY `idx_tanggal_expired` (`tanggal_expired`),
+
+    CONSTRAINT `fk_dokumen_user`     FOREIGN KEY (`user_id`)     REFERENCES `pengguna` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_dokumen_uploader` FOREIGN KEY (`uploaded_by`) REFERENCES `pengguna` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Dokumen karyawan (kontrak, SK, SP, sertifikat, dll)';
+
+
+-- ============================================================
+-- 4. UPDATE sisa_cuti untuk karyawan existing
+--    Semua karyawan lama dapat jatah cuti 12 hari full
+-- ============================================================
+
+UPDATE `pengguna` 
+SET `jatah_cuti` = 12, `sisa_cuti` = 12
+WHERE `jatah_cuti` = 12 AND `sisa_cuti` = 12;
+
+
+-- ============================================================
+-- 5. VIEW: v_performa_karyawan
+--    Gabungan absensi + cuti + SP untuk dashboard performa
+-- ============================================================
+
+CREATE OR REPLACE VIEW `v_performa_karyawan` AS
+SELECT
+    p.id                                                        AS user_id,
+    p.nama,
+    p.nik,
+    p.user_level,
+    p.golongan,
+    p.status_kepegawaian,
+    p.tanggal_join,
+    p.jatah_cuti,
+    p.sisa_cuti,
+
+    -- Absensi bulan ini
+    COALESCE(ab.hadir_bulan_ini, 0)                            AS hadir_bulan_ini,
+    DAY(LAST_DAY(NOW()))                                       AS total_hari_bulan_ini,
+    ROUND(
+        COALESCE(ab.hadir_bulan_ini, 0) 
+        / DAY(LAST_DAY(NOW())) * 100
+    , 1)                                                       AS persen_kehadiran,
+
+    -- Absensi tahun ini
+    COALESCE(ab_year.hadir_tahun_ini, 0)                       AS hadir_tahun_ini,
+
+    -- SP aktif (semua SP yang ada)
+    COALESCE(sp.jumlah_sp, 0)                                  AS jumlah_sp,
+    sp.sp_terakhir                                             AS jenis_sp_terakhir,
+
+    -- Cuti pending
+    COALESCE(ct.cuti_pending, 0)                               AS cuti_pending,
+    COALESCE(ct.cuti_disetujui_tahun_ini, 0)                   AS cuti_disetujui_tahun_ini,
+
+    -- Masa kerja (dalam bulan)
+    TIMESTAMPDIFF(MONTH, p.tanggal_join, NOW())                AS masa_kerja_bulan
+
+FROM `pengguna` p
+
+-- Absensi bulan ini
+LEFT JOIN (
+    SELECT 
+        user_id,
+        COUNT(*) AS hadir_bulan_ini
+    FROM absensi
+    WHERE MONTH(tanggal) = MONTH(NOW())
+      AND YEAR(tanggal)  = YEAR(NOW())
+    GROUP BY user_id
+) ab ON ab.user_id = p.id
+
+-- Absensi tahun ini
+LEFT JOIN (
+    SELECT 
+        user_id,
+        COUNT(*) AS hadir_tahun_ini
+    FROM absensi
+    WHERE YEAR(tanggal) = YEAR(NOW())
+    GROUP BY user_id
+) ab_year ON ab_year.user_id = p.id
+
+-- SP (Surat Peringatan)
+LEFT JOIN (
+    SELECT
+        user_id,
+        COUNT(*) AS jumlah_sp,
+        MAX(jenis_dokumen) AS sp_terakhir
+    FROM karyawan_dokumen
+    WHERE jenis_dokumen IN ('SP1','SP2','SP3','Surat Peringatan Lainnya')
+    GROUP BY user_id
+) sp ON sp.user_id = p.id
+
+-- Cuti
+LEFT JOIN (
+    SELECT
+        user_id,
+        SUM(CASE WHEN status = 'Pending'    THEN 1 ELSE 0 END) AS cuti_pending,
+        SUM(CASE WHEN status = 'Disetujui' 
+                  AND YEAR(tanggal_mulai) = YEAR(NOW()) 
+                  THEN 1 ELSE 0 END)                           AS cuti_disetujui_tahun_ini
+    FROM karyawan_cuti
+    GROUP BY user_id
+) ct ON ct.user_id = p.id;
+
+
+-- ============================================================
+-- DONE ✅
+-- Jalankan urutan:
+-- 1. ALTER pengguna
+-- 2. CREATE karyawan_cuti
+-- 3. CREATE karyawan_dokumen
+-- 4. UPDATE existing data
+-- 5. CREATE VIEW
+-- ============================================================
+
+-- ════════════════════════════════════════
+-- ALTER: Tambah kolom group_karyawan
+-- ════════════════════════════════════════
+ALTER TABLE `pengguna`
+    ADD COLUMN `group_karyawan` ENUM(
+        'Yamazaki Staff',
+        'Admin TSC',
+        'Operasional TSC',
+        'TSF Staff',
+        'Sinar Boga Staff',
+        'Rorotan Staff'
+    ) NULL DEFAULT NULL
+    COMMENT 'Group/divisi karyawan'
+    AFTER `status_kepegawaian`;
+
+
+ALTER TABLE pengguna 
+MODIFY COLUMN user_level ENUM(
+    'superadmin',
+    'admin_operational',
+    'operational_staff',
+    'finance_staff',
+    'fleet_staff',
+    'viewer',
+    'admin_document',
+    'dispatcher',
+    'admin_staff',
+    'checker',
+    'distributor',
+    'rorotan'
+) NOT NULL;

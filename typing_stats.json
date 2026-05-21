@@ -1,0 +1,116 @@
+{
+  "total_sessions": 12,
+  "best_wpm": 1103,
+  "best_accuracy": 100.0,
+  "total_chars": 2182,
+  "history": [
+    {
+      "date": "2025-12-03 13:16:50",
+      "wpm": 49,
+      "accuracy": 100.0,
+      "chars": 199,
+      "time": 47.99,
+      "language": "text_id",
+      "difficulty": "hard"
+    },
+    {
+      "date": "2025-12-03 13:17:09",
+      "wpm": 1103,
+      "accuracy": 100.0,
+      "chars": 199,
+      "time": 2.16,
+      "language": "text_id",
+      "difficulty": "hard"
+    },
+    {
+      "date": "2025-12-03 13:18:06",
+      "wpm": 54,
+      "accuracy": 100.0,
+      "chars": 199,
+      "time": 43.76,
+      "language": "text_id",
+      "difficulty": "hard"
+    },
+    {
+      "date": "2025-12-05 09:25:26",
+      "wpm": 15,
+      "accuracy": 89.2,
+      "chars": 152,
+      "time": 117.02,
+      "language": "javascript",
+      "difficulty": "hard"
+    },
+    {
+      "date": "2025-12-05 09:27:23",
+      "wpm": 53,
+      "accuracy": 100.0,
+      "chars": 260,
+      "time": 58.82,
+      "language": "text_id",
+      "difficulty": "hard"
+    },
+    {
+      "date": "2025-12-05 15:48:24",
+      "wpm": 19,
+      "accuracy": 100.0,
+      "chars": 14,
+      "time": 8.63,
+      "language": "python",
+      "difficulty": "easy"
+    },
+    {
+      "date": "2025-12-05 15:51:43",
+      "wpm": 23,
+      "accuracy": 94.0,
+      "chars": 120,
+      "time": 60.8,
+      "language": "javascript",
+      "difficulty": "hard"
+    },
+    {
+      "date": "2025-12-05 15:52:54",
+      "wpm": 40,
+      "accuracy": 99.5,
+      "chars": 194,
+      "time": 57.42,
+      "language": "text_en",
+      "difficulty": "hard"
+    },
+    {
+      "date": "2025-12-05 15:54:26",
+      "wpm": 44,
+      "accuracy": 100.0,
+      "chars": 260,
+      "time": 70.07,
+      "language": "text_id",
+      "difficulty": "hard"
+    },
+    {
+      "date": "2025-12-11 11:15:29",
+      "wpm": 53,
+      "accuracy": 100.0,
+      "chars": 199,
+      "time": 44.31,
+      "language": "text_id",
+      "difficulty": "hard"
+    },
+    {
+      "date": "2025-12-11 11:51:52",
+      "wpm": 51,
+      "accuracy": 100.0,
+      "chars": 260,
+      "time": 60.61,
+      "language": "text_id",
+      "difficulty": "hard"
+    },
+    {
+      "date": "2025-12-11 11:52:55",
+      "wpm": 51,
+      "accuracy": 99.6,
+      "chars": 126,
+      "time": 29.46,
+      "language": "text_id",
+      "difficulty": "medium"
+    }
+  ]
+}

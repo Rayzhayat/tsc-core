@@ -1,0 +1,143 @@
+{
+  "sheet": "FTL COC SPX",
+  "features": [
+    "Periode",
+    "Origin",
+    "Dest1",
+    "Dest2",
+    "Truck Type",
+    "Vendor",
+    "Trip Cost from User",
+    "Multidrop Inner",
+    "Multidrop Outer",
+    "Rate User-TSC",
+    "Trip Cost to Vendor",
+    "Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)",
+    "Rate TSC-Vendor"
+  ],
+  "categorical": [
+    "Periode",
+    "Origin",
+    "Dest1",
+    "Dest2",
+    "Truck Type",
+    "Vendor"
+  ],
+  "numerical": [
+    "Trip Cost from User",
+    "Multidrop Inner",
+    "Multidrop Outer",
+    "Rate User-TSC",
+    "Trip Cost to Vendor",
+    "Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)",
+    "Rate TSC-Vendor"
+  ],
+  "label_encoders": {
+    "Periode": {
+      "classes": [
+        "April",
+        "Februari",
+        "Januari",
+        "Maret"
+      ]
+    },
+    "Origin": {
+      "classes": [
+        "Cakung 3 DC",
+        "Cakung 4 DC",
+        "Cakung 5 DC",
+        "Cileungsi DC",
+        "IDH KOSAMBI",
+        "INVENTORY WAREHOUSE",
+        "JAKTARA RETURN SUNTER",
+        "Jakarta Liq Center (Logos Bekasi)",
+        "Jakarta Return DC",
+        "KOSAMBI DC",
+        "Kediri DC",
+        "Kosambi",
+        "Otani Paper - Jatiwulung",
+        "PT RODAHAMMERINDONJAYA",
+        "Surabaya ",
+        "Transit Point Kalideres DC",
+        "Transit Point Serang DC",
+        "VIRTUAL KOSAMBI 2 DC",
+        "Virtual Semarang D"
+      ]
+    },
+    "Dest1": {
+      "classes": [
+        " JAKARTA (LIQ CENTER) LOGOS",
+        "Bekasi 3 DC",
+        "Bekasi DC",
+        "Cakung 2 DC",
+        "Cileungsi",
+        "Depok DC",
+        "FLORUS,CILEUNGSI DC SPX",
+        "HUB SAWALU",
+        "JAKTARA RETURN SUNTER",
+        "Jakarta",
+        "Jakarta DC",
+        "KARAWANG",
+        "Kosambi DC",
+        "Medan DC",
+        "Otani Paper - Tanjung Priok",
+        "Otani Paper - Tanjung Priok,",
+        "Overflow Karawang DC",
+        "Pekalongan DC",
+        "Rancaekek 2 DC",
+        "Rancaekek DC",
+        "SUNTER DC",
+        "Sidoarjo 2 DC",
+        "Sunter DC"
+      ]
+    },
+    "Dest2": {
+      "classes": [
+        "Benowo DC",
+        "Cakung RDC",
+        "Cileungsi DC",
+        "Tapos DC",
+        "Tegal DC",
+        "nan"
+      ]
+    },
+    "Truck Type": {
+      "classes": [
+        "CDDL",
+        "WB"
+      ]
+    },
+    "Vendor": {
+      "classes": [
+        "BJA",
+        "DELIMA",
+        "DJ",
+        "EVEL",
+        "HASNA",
+        "HLI",
+        "KOMARA",
+        "NAMORA",
+        "OWN UNIT",
+        "PJM",
+        "PSD",
+        "RAFSAN",
+        "SJL",
+        "STEVEN "
+      ]
+    }
+  },
+  "num_medians": {
+    "Trip Cost from User": 2870000.0,
+    "Multidrop Inner": NaN,
+    "Multidrop Outer": 450000.0,
+    "Rate User-TSC": 2870000.0,
+    "Trip Cost to Vendor": 2200000.0,
+    "Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)": 675000.0,
+    "Rate TSC-Vendor": 2200000.0
+  },
+  "eval": {
+    "mae": 208279.84,
+    "r2": -3.178,
+    "mape": 42.9985
+  }
+}

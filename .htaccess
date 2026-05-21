@@ -1,0 +1,18 @@
+DirectoryIndex index.html
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # ✅ TAMBAHKAN INI — Skip rewrite untuk sw.js dan offline.html
+    RewriteCond %{REQUEST_URI} ^/sw\.js$ [OR]
+    RewriteCond %{REQUEST_URI} ^/offline\.html$
+    RewriteRule ^ - [L]
+
+    # Skip rewrite untuk index.html
+    RewriteCond %{REQUEST_URI} !^/index\.html$
+
+    # Route semua request ke app.php (kecuali file yang exist)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ app.php/$1 [L,QSA]
+</IfModule>
