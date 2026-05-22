@@ -1,5 +1,5 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
 class Absensi extends CI_Controller
 {
@@ -48,11 +48,18 @@ class Absensi extends CI_Controller
             $this->user_id = null;
         }
 
-        $user_data = $this->db->where('id', $this->user_id)
-            ->get('pengguna')->row();
-
-        $this->user_group = $user_data->group_karyawan ?? null;
-        $this->can_view_laporan = (bool) ($user_data->can_view_laporan ?? false);
+        // ✅ FIX: hanya query DB kalau user_id ada (bukan null)
+        // Sebelumnya kalau rfid_submit (user_id = null), query ini
+        // jalan tanpa WHERE → return row pertama dari tabel pengguna
+        if ($this->user_id) {
+            $user_data = $this->db->where('id', $this->user_id)
+                ->get('pengguna')->row();
+            $this->user_group = $user_data->group_karyawan ?? null;
+            $this->can_view_laporan = (bool) ($user_data->can_view_laporan ?? false);
+        } else {
+            $this->user_group = null;
+            $this->can_view_laporan = false;
+        }
 
         $this->load->model('M_absensi');
         $this->load->model('M_pengguna');
@@ -438,28 +445,25 @@ class Absensi extends CI_Controller
         $limit = (int) $this->input->get('length');
         $search = $this->input->get('search')['value'] ?? '';
 
-        // ── SORTING: baca parameter dari DataTables ──────────────────────────
         $order_raw = $this->input->get('order');
         $order_col_idx = isset($order_raw[0]['column']) ? (int) $order_raw[0]['column'] : 5;
         $order_dir = isset($order_raw[0]['dir']) ? strtolower($order_raw[0]['dir']) : 'desc';
         $order_dir = in_array($order_dir, ['asc', 'desc']) ? $order_dir : 'desc';
 
-        // Map index kolom (sesuai urutan columns: di view) → kolom DB
         $column_map = [
-            0 => 'absensi.id',          // No
-            1 => 'absensi.tipe',        // Tipe
-            2 => 'absensi.foto',        // Foto  (orderable: false di view, tapi tetap di-map)
-            3 => 'pengguna.nama',       // Nama
-            4 => 'pengguna.nik',        // NIK
-            5 => 'absensi.tanggal',     // Tanggal
-            6 => 'absensi.waktu',       // Waktu
-            7 => 'absensi.alamat',      // Alamat
-            8 => 'absensi.latitude',    // Lokasi (orderable: false)
-            9 => 'absensi.id',          // Aksi   (orderable: false, fallback id)
+            0 => 'absensi.id',
+            1 => 'absensi.tipe',
+            2 => 'absensi.foto',
+            3 => 'pengguna.nama',
+            4 => 'pengguna.nik',
+            5 => 'absensi.tanggal',
+            6 => 'absensi.waktu',
+            7 => 'absensi.alamat',
+            8 => 'absensi.latitude',
+            9 => 'absensi.id',
         ];
 
         $order_col = $column_map[$order_col_idx] ?? 'absensi.tanggal';
-        // ─────────────────────────────────────────────────────────────────────
 
         $result = $this->M_absensi->get_paginated(
             $start,

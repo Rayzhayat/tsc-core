@@ -1,11 +1,13 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
 use Dompdf\Dompdf;
 
-class Akunbiaya extends CI_Controller {
+class Akunbiaya extends CI_Controller
+{
 
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
 
         if (!$this->session->userdata('login')) {
@@ -23,19 +25,22 @@ class Akunbiaya extends CI_Controller {
         $this->data['aktif'] = 'akunbiaya';
     }
 
-    public function index() {
+    public function index()
+    {
         $this->data['title'] = 'Master Akun Biaya';
         $this->data['akunbiaya'] = $this->M_akunbiaya->lihat();
         $this->load->view('akunbiaya/lihat', $this->data);
     }
 
-    public function tambah() {
+    public function tambah()
+    {
         $this->data['title'] = 'Tambah Akun Biaya';
-        $this->data['akun_induk_list'] = ['6000','600001','2101','1103','1101','5101','1200','1105','2102','7200','7100','4401','4000'];
+        $this->data['akun_induk_list'] = ['6000', '600001', '2101', '1103', '1101', '5101', '1200', '1105', '2102', '7200', '7100', '4401', '4000'];
         $this->load->view('akunbiaya/tambah', $this->data);
     }
 
-    public function proses_tambah() {
+    public function proses_tambah()
+    {
         $this->form_validation->set_rules('kode_perkiraan', 'Kode Perkiraan', 'required|is_unique[tb_akunbiaya.kode_perkiraan]');
         $this->form_validation->set_rules('nama', 'Nama Akun', 'required');
         $this->form_validation->set_rules('tipe_akun', 'Tipe Akun', 'required');
@@ -68,26 +73,28 @@ class Akunbiaya extends CI_Controller {
         }
     }
 
-    public function ubah($id) {
+    public function ubah($id)
+    {
         $this->data['title'] = 'Ubah Akun Biaya';
         $this->data['akun'] = $this->M_akunbiaya->lihat_id($id);
         if (!$this->data['akun']) {
             $this->session->set_flashdata('error', 'Akun tidak ditemukan!');
             redirect('akunbiaya');
         }
-        $this->data['akun_induk_list'] = ['6000','600001','2101','1103','1101','5101','1200','1105','2102','7200','7100','4401','4000'];
+        $this->data['akun_induk_list'] = ['6000', '600001', '2101', '1103', '1101', '5101', '1200', '1105', '2102', '7200', '7100', '4401', '4000'];
         $this->load->view('akunbiaya/ubah', $this->data);
     }
 
     // 🔥 FIX UTAMA: TERIMA PARAMETER $id DARI URL
-    public function proses_ubah($id) {
+    public function proses_ubah($id)
+    {
         $this->form_validation->set_rules('nama', 'Nama Akun', 'required');
         $this->form_validation->set_rules('tipe_akun', 'Tipe Akun', 'required');
-        
+
         // Cek kode perkiraan unik (kecuali untuk record ini sendiri)
         $kode_baru = $this->input->post('kode_perkiraan');
         $akun_lama = $this->M_akunbiaya->lihat_id($id);
-        
+
         if ($kode_baru != $akun_lama->kode_perkiraan) {
             if ($this->M_akunbiaya->is_kode_exists($kode_baru, $id)) {
                 $this->session->set_flashdata('error', 'Kode perkiraan sudah digunakan!');
@@ -124,7 +131,8 @@ class Akunbiaya extends CI_Controller {
         }
     }
 
-    public function hapus($id) {
+    public function hapus($id)
+    {
         if ($this->M_akunbiaya->hapus($id)) {
             $this->session->set_flashdata('success', 'Akun biaya berhasil dihapus!');
         } else {
@@ -133,7 +141,8 @@ class Akunbiaya extends CI_Controller {
         redirect('akunbiaya');
     }
 
-    public function export() {
+    public function export()
+    {
         $dompdf = new Dompdf();
         $this->data['title'] = 'Laporan Akun Biaya';
         $this->data['all_akun'] = $this->M_akunbiaya->lihat();
@@ -145,7 +154,8 @@ class Akunbiaya extends CI_Controller {
         $dompdf->stream('Laporan_Akun_Biaya_' . date('d-m-Y') . '.pdf', ['Attachment' => false]);
     }
 
-    public function search() {
+    public function search()
+    {
         $keyword = $this->input->post('keyword');
         $this->db->like('tipe_akun', $keyword);
         $this->db->or_like('kode_perkiraan', $keyword);
@@ -181,16 +191,18 @@ class Akunbiaya extends CI_Controller {
         echo $output;
     }
 
-    public function input_saldo() {
+    public function input_saldo()
+    {
         $data['title'] = 'Input Saldo Awal';
         $data['aktif'] = 'input_saldo';
         $data['akun_biaya'] = $this->M_akunbiaya->get_all();
         $this->load->view('akunbiaya/input_saldo', $data);
     }
 
-    public function proses_input_saldo() {
+    public function proses_input_saldo()
+    {
         $saldo_data = $this->input->post('saldo');
-        
+
         if (!$saldo_data || !is_array($saldo_data)) {
             $this->session->set_flashdata('error', 'Tidak ada data saldo yang diinput!');
             redirect('akunbiaya/input_saldo');
@@ -202,7 +214,7 @@ class Akunbiaya extends CI_Controller {
 
         foreach ($saldo_data as $id => $saldo_str) {
             $saldo = (float)str_replace('.', '', $saldo_str);
-            
+
             if ($saldo >= 0) {
                 if ($this->M_akunbiaya->update_saldo_awal($id, $saldo)) {
                     $success_count++;
@@ -215,7 +227,7 @@ class Akunbiaya extends CI_Controller {
         if ($success_count > 0) {
             $this->session->set_flashdata('success', "Berhasil update {$success_count} saldo awal!");
         }
-        
+
         if ($error_count > 0) {
             $this->session->set_flashdata('error', "Gagal update {$error_count} saldo awal!");
         }
@@ -223,12 +235,13 @@ class Akunbiaya extends CI_Controller {
         redirect('akunbiaya');
     }
 
-    public function ajax_update_saldo() {
+    public function ajax_update_saldo()
+    {
         $id = $this->input->post('id');
         $saldo_str = $this->input->post('saldo');
-        
+
         $saldo = (float)str_replace('.', '', $saldo_str);
-        
+
         if ($this->M_akunbiaya->update_saldo_awal($id, $saldo)) {
             echo json_encode([
                 'success' => true,

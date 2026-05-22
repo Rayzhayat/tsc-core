@@ -166,6 +166,7 @@ class Analytics extends CI_Controller
         $data = [];
         switch ($type) {
             case 'margin_trend':
+                
                 $rows = $this->M_analytics->margin_trend($filters);
                 $data = [
                     'labels' => array_column($rows, 'periode'),
