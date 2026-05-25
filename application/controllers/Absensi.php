@@ -282,60 +282,111 @@ class Absensi extends CI_Controller
     {
         header('Content-Type: application/json');
 
-        $api_key = $this->input->post('api_key') ?: $this->input->server('HTTP_X_API_KEY');
+        // =====================================================
+        // AUTH — baca api_key dari semua kemungkinan source
+        // =====================================================
+        $api_key = null;
+
+        // 1. Dari header X-API-Key
+        $api_key = $this->input->server('HTTP_X_API_KEY');
+
+        // 2. Dari POST body via CI3
+        if (empty($api_key)) {
+            $api_key = $this->input->post('api_key');
+        }
+
+        // 3. Fallback: parse raw body langsung (bypass CI3 filtering)
+        if (empty($api_key)) {
+            parse_str(file_get_contents('php://input'), $raw_post);
+            $api_key = $raw_post['api_key'] ?? null;
+        }
+
         $valid_key = $this->config->item('rfid_api_key');
 
-        if ($api_key !== $valid_key) {
+        if (empty($api_key) || $api_key !== $valid_key) {
             http_response_code(401);
-            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Unauthorized',
+                'debug_received' => $api_key, // ← hapus setelah fix confirmed
+            ]);
             return;
         }
 
+        // =====================================================
+        // VALIDASI UID
+        // =====================================================
         $uid = strtoupper(trim($this->input->post('uid')));
+
+        if (empty($uid)) {
+            // Fallback: coba dari raw body juga
+            if (!empty($raw_post)) {
+                $uid = strtoupper(trim($raw_post['uid'] ?? ''));
+            }
+        }
+
         if (empty($uid)) {
             echo json_encode(['success' => false, 'message' => 'UID tidak boleh kosong']);
             return;
         }
 
+        // =====================================================
+        // CEK KARTU
+        // =====================================================
         $this->load->model('M_rfid');
 
         $card = $this->M_rfid->get_by_uid($uid);
         if (!$card) {
-            echo json_encode(['success' => false, 'message' => 'Kartu tidak terdaftar', 'code' => 'CARD_NOT_FOUND']);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Kartu tidak terdaftar',
+                'code'    => 'CARD_NOT_FOUND',
+            ]);
             return;
         }
 
         if (!$card->is_active) {
-            echo json_encode(['success' => false, 'message' => 'Kartu tidak aktif', 'code' => 'CARD_INACTIVE', 'nama' => $card->nama]);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Kartu tidak aktif',
+                'code'    => 'CARD_INACTIVE',
+                'nama'    => $card->nama,
+            ]);
             return;
         }
 
+        // =====================================================
+        // RESOLVE TIPE IN / OUT
+        // =====================================================
         $resolved = $this->resolve_tipe($card->user_id);
 
         if (isset($resolved['error']) && $resolved['error']) {
             echo json_encode([
                 'success' => false,
                 'message' => 'Absensi sudah lengkap',
-                'code' => 'ALREADY_COMPLETE',
-                'nama' => $card->nama,
-                'in' => $resolved['data']['in'] ?? null,
-                'out' => $resolved['data']['out'] ?? null,
+                'code'    => 'ALREADY_COMPLETE',
+                'nama'    => $card->nama,
+                'in'      => $resolved['data']['in']  ?? null,
+                'out'     => $resolved['data']['out'] ?? null,
             ]);
             return;
         }
 
         $tipe = $resolved['tipe'];
 
+        // =====================================================
+        // SIMPAN ABSENSI
+        // =====================================================
         $data = [
-            'user_id' => $card->user_id,
-            'tanggal' => date('Y-m-d'),
-            'waktu' => date('H:i:s'),
-            'foto' => 'rfid_no_photo.jpg',
-            'latitude' => '-6.1751',
-            'longitude' => '106.8650',
-            'alamat' => 'Kantor TSC - Absensi RFID',
-            'metode' => 'rfid',
-            'tipe' => $tipe,
+            'user_id'    => $card->user_id,
+            'tanggal'    => date('Y-m-d'),
+            'waktu'      => date('H:i:s'),
+            'foto'       => 'rfid_no_photo.jpg',
+            'latitude'   => '-6.1751',
+            'longitude'  => '106.8650',
+            'alamat'     => 'Kantor TSC - Absensi RFID',
+            'metode'     => 'rfid',
+            'tipe'       => $tipe,
             'created_at' => date('Y-m-d H:i:s'),
         ];
 
@@ -343,15 +394,19 @@ class Absensi extends CI_Controller
             echo json_encode([
                 'success' => true,
                 'message' => 'Absensi ' . strtoupper($tipe) . ' berhasil',
-                'code' => 'SUCCESS',
-                'tipe' => $tipe,
-                'nama' => $card->nama,
-                'nik' => $card->nik,
-                'waktu' => date('H:i:s'),
+                'code'    => 'SUCCESS',
+                'tipe'    => $tipe,
+                'nama'    => $card->nama,
+                'nik'     => $card->nik,
+                'waktu'   => date('H:i:s'),
                 'tanggal' => date('d/m/Y'),
             ]);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Gagal simpan ke database', 'code' => 'DB_ERROR']);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Gagal simpan ke database',
+                'code'    => 'DB_ERROR',
+            ]);
         }
     }
 

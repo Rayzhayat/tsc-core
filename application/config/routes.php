@@ -137,6 +137,7 @@ $route['driver_keluhan/update_status/(:num)'] = 'driver_keluhan/update_status/$1
 $route['driver_keluhan/export'] = 'driver_keluhan/export';
 $route['driver_keluhan/hapus/(:num)'] = 'driver_keluhan/hapus/$1';
 
+
 $route['notifikasi/get']       = 'notifikasi/get';
 $route['notifikasi/mark_read'] = 'notifikasi/mark_read';
 
@@ -162,6 +163,7 @@ $route['rfid_cards/edit/(:num)'] = 'RfidCards/edit/$1';
 $route['rfid_cards/hapus/(:num)'] = 'RfidCards/hapus/$1';
 $route['rfid_cards/toggle/(:num)'] = 'RfidCards/toggle/$1';
 $route['absensi/rfid_submit'] = 'absensi/rfid_submit';
+
 $route['rfid_cards/pending']       = 'RfidCards/pending';
 $route['rfid_cards/check_pending'] = 'RfidCards/check_pending';
 $route['rfid_cards/assign']        = 'RfidCards/assign';
@@ -191,8 +193,7 @@ $route['broadcast/dismiss/(:num)']   = 'broadcast/dismiss/$1';
 $route['broadcast/dismiss_all']      = 'broadcast/dismiss_all';
 $route['broadcast/count']            = 'broadcast/count';
 
-//Laporan data
-$route['absensi/laporan_data'] = 'absensi/laporan_data';
+$route['absensi/laporan_data'] = 'absensi/laporan_data'; 
 
 // Org Chart
 $route['org_chart']                = 'OrgChart/index';
@@ -208,3 +209,8 @@ $route['analytics']           = 'Analytics/index';
 $route['analytics/import']    = 'Analytics/import';
 $route['analytics/do_import'] = 'Analytics/do_import';
 $route['analytics/export']    = 'Analytics/export';
+
+// API — RFID (no session required)
+$route['api/rfid_submit']  = 'Api/rfid_submit';
+$route['api/pending_card'] = 'Api/pending_card';
+ 
