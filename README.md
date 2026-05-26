@@ -76,7 +76,7 @@ Gunakan akun berikut untuk mencoba aplikasi:
 |---|---|
 | **Username** | `raynorhayat` |
 | **Password** | `raynor` |
-| **Role** | `superadmin` |
+| **Rogitle** | `superadmin` |
 
 > Akun ini memiliki akses penuh ke seluruh fitur aplikasi.
 ---
