@@ -49,6 +49,17 @@ Untuk kalian yang mau belajar atau butuh inspirasi tentang aplikasi web berbasis
    Modul khusus finance untuk memantau status pembayaran dari user dan ke vendor, nomor invoice, serta laporan keuangan per periode.
 7. **Export CSV**
    Export data analytics & monitoring ke CSV untuk laporan atau bahan presentasi.
+
+8. **Absensi Karyawan**
+   Sistem absensi terintegrasi dengan beberapa metode check-in/out:
+   - **Selfie** — absen via foto dengan validasi koordinat GPS & alamat otomatis
+   - **RFID** — absen menggunakan kartu/tag RFID
+   - **Auto Out** — clock-out otomatis jika karyawan lupa absen keluar
+   - Manajemen jadwal kerja per golongan (Senin–Jumat, Senin–Sabtu, Full 7 Hari)
+   - Pengajuan & approval cuti karyawan (Pending / Disetujui / Ditolak)
+   - Hari libur / hari off khusus per karyawan atau per role
+   - Manajemen dokumen karyawan (kontrak, SK, SP, sertifikat, dll)
+   - Dashboard performa karyawan: rekap kehadiran, persentase hadir, sisa cuti, jumlah SP
 ---
 ### Role
 | Role | Akses |
