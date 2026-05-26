@@ -1,72 +1,97 @@
-# Aplikasi Inventori Dengan Framework CodeIgniter 3 & Template SB Admin 2
+# TSC Core — Transportation Management System + Analytics
+
+Aplikasi berbasis web untuk monitoring dan analisis data pengiriman (shipment) secara efisien, mulai dari tracking harian hingga analisis margin per customer dan vendor.
+
+---
 
 ### Kenapa saya membuat aplikasi ini?
+Aplikasi ini dibangun sebagai tools operasional nyata sekaligus portfolio. Dirancang untuk membantu tim logistik dan finance dalam memonitor data pengiriman, menganalisis profitabilitas, serta mendeteksi data yang belum lengkap secara otomatis.
 
-Ini merupakan aplikasi yang akan saya jadikan sebagai portfolio. Sebenarnya saya sudah banyak membuat banyak aplikasi berbasis web, namun saya lupa membackupnya. Jadi saya harus mengulang lagi dari awal demi portfolio. Selain sebagai portfolio, contoh aplikasi ini juga bisa saya jadikan sebagai latihan untuk mengasah skill koding saya.
+### Untuk siapa?
+Untuk kalian yang mau belajar atau butuh inspirasi tentang aplikasi web berbasis PHP & MySQL, terutama di bidang logistik, transportasi, dan finance.
 
-### Untuk siapa sih aplikasi ini?
+### Boleh dimodifikasi?
+**Sangat boleh!** Tapi tetap sertakan credit siapa yang membuat aplikasi ini.
 
-Untuk kalian semua yang mau belajar atau yang butuh inspirasi tentang aplikasi berbasis web terutama yang menggunakan PHP dan MySQL.
+### Boleh dijual?
+**Dilarang keras!** Aplikasi ini gratis dan bebas digunakan oleh siapapun.
 
-### Boleh ga memodifikasi aplikasi ini?
+---
 
-Jawabanya adalah **sangat sangat boleh!** Tapi ingat tetap sertakan siapa yang membuat aplikasi ini. 
+### Tech Stack
 
-### Kalo di jual boleh ga?
+| Layer | Teknologi |
+|---|---|
+| **Backend** | PHP 7.4+, CodeIgniter 3 |
+| **Frontend** | HTML5, CSS3, JavaScript |
+| **UI Template** | Tabler UI + CoreUI |
+| **Database** | MySQL |
+| **Chart** | Chart.js 4 |
+| **Icons** | Font Awesome 5 |
+| **Data Input** | Google Sheets → Export CSV → Import |
 
-**Dilarang Keras!** Karena ini aplikasi bener bener gratis dan bebas bagi siapapun yang menggunakan dan ingin memodifikasinya.
+---
 
-### Fiturnya apa saja sih?
-Untuk fiturnya masih sangas sederhana, contohnya sebagai berikut
-1. **Modul Authentikasi**
-   
-   Di modul ini saya membuat fitur untuk login dan logout.
-   
-2. **Modul Data Barang**
-   
-   Di modul ini saya membuat fitur untuk melihat, menambah, mengubah, menghapus dan meng-ekspor data barang.
-   
-3. **Modul Data Customer**
+### Fitur
 
-   Di modul ini saya membuat fitur untuk melihat, menambah, mengubah, menghapus dan meng-ekspor data Cutomer.
-   
-4. **Modul Data Supplier**
+1. **Autentikasi**
+   Login & logout dengan role-based access control.
 
-   Di modul ini saya membuat fitur untuk melihat, menambah, mengubah, menghapus dan meng-ekspor data Supplier.
-   
-5. **Modul Data Petugas**
+2. **Import CSV**
+   Upload data monitoring dari Google Sheets. Mendukung sheet type:
+   - FTL Non SPX
+   - FTL A1 SPX
+   - FTL Dedicated
+   - FTL COC SPX
+   - FTL Reguler SPX
+   - Dailyrent
 
-   Di modul ini saya membuat fitur untuk melihat, menambah, mengubah, menghapus dan meng-ekspor data Petugas.
-   
-6. **Modul Transaksi Penerimaan**
+3. **Analytics Dashboard**
+   - Summary total shipment, revenue, margin & unfulfill
+   - Trend margin per bulan (per sheet type / total)
+   - Top 5 customer berdasarkan revenue
+   - Profitability per customer
+   - Top 5 vendor support
+   - Rata-rata shipment per bulan per customer
+   - Rute non-profitable
+   - Rute yang sering unfulfill
 
-   Di modul ini saya membuat fitur untuk melihat, menambah, menghapus dan meng-ekspor transaksi penerimaan.
-   
-7. **Modul Transaksi Pengeluaran**
+4. **Daily Monitoring**
+   Pantau shipment harian dengan deteksi otomatis data bolong, unfulfill, dan pending payment.
 
-   Di modul ini saya membuat fitur untuk melihat, menambah, menghapus dan meng-ekspor transaksi pengeluaran.
+5. **Weekly Report**
+   Laporan mingguan: performa per customer, data bolong, pending payment, dan unfulfill dalam satu halaman.
 
-8. **Modul Manajemen Akun**
+6. **Finance**
+   Modul khusus finance untuk memantau status pembayaran dari user dan ke vendor, nomor invoice, serta laporan keuangan per periode.
 
-   Di modul ini saya hanya membuat fitur untuk melihat dan menghapus akun.
-	 
+7. **Export CSV**
+   Export data analytics & monitoring ke CSV untuk laporan atau bahan presentasi.
+
+---
+
 ### Role
-Terdapat Dua Role yaitu `admin` & `petugas`
+
+| Role | Akses |
+|---|---|
+| `superadmin` | Akses penuh — import, analytics, finance |
+| `finance_staff` | Import CSV + analytics + finance |
+| `head_of_departemen` | Analytics (view only) |
+| `operational_lead` | Analytics (view only) |
+
+---
 
 ### Instalasi & Konfigurasi
 
-Untuk cara instalasi dan konfigurasi caranya sangat mudah
+1. Clone atau download repositori ini
+2. Masuk ke folder project
+3. Jalankan `composer install`
+4. Buka `application/config/config.php`, ubah `$config['base_url']` sesuai path lokal kalian
+5. Sesuaikan konfigurasi database di `application/config/database.php`
+6. Import file SQL dari folder `db-tsc/` ke database kalian
+7. Jalankan aplikasi
 
-1. Kalian download atau clone repositori ini
-2. Masuk ke folder project ini
-3. Lalu buka terminal dan jalankan `composer install`
-4. Selanjutnya kalian bisa buka file `application/config/config.php` 
-5. Ubah isi dari variable `$config['base_url']` dengan `http://localhost/namafolder/`
-6. Untuk `namafolder` silahkan kalian ganti sesuai nama folder dari aplikasi ini di komputer atau laptop kalian
-7. Import `db_inventori.sql` ke database milik kalian
-8. Untuk login `admin` kalian bisa menggunakan username = `nugrohoff` dan password `pwd_nugroho`
-9. Untuk login `petugas` kalian bisa menggunakan username = `PTGS35` dan password `pwd_fanani`
+---
 
 ### Tentang Saya
-
-Fakhrul Nugroho siswa Kelas 12 Jurusan Teknik Komputer Informatika di SMK Negeri 1 Wanareja. https://www.instagram.com/nugrohospace/
+**Raynor Hayat** — Developer aplikasi TMS & Analytics berbasis web (PHP, CodeIgniter 3, MySQL).
