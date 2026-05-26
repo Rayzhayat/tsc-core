@@ -1,9 +1,8 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
 class M_analytics extends CI_Model
 {
-    // ── Helper: parse angka dari format "2,400,000" atau 2400000 ──
     private function _parse_number($val)
     {
         if ($val === '' || $val === null)
@@ -12,7 +11,6 @@ class M_analytics extends CI_Model
         return is_numeric($clean) ? (float) $clean : 0;
     }
 
-    // ── Helper: parse tanggal dari berbagai format ──
     private function _parse_date($val)
     {
         if (empty(trim($val)))
@@ -23,6 +21,37 @@ class M_analytics extends CI_Model
             return date('Y-m-d', $ts);
         }
         return null;
+    }
+
+    // ── Helper: hitung margin sementara ──
+    // Formula: Rate User-TSC - Rate TSC-Vendor
+    // Rate TSC-Vendor = Trip Cost to Vendor + Biaya Lain Vendor + PPH (kalau Rate TSC-Vendor kosong)
+    private function _calc_margin($map)
+    {
+        $margin_raw = $this->_parse_number($map['Margin'] ?? 0);
+        if ($margin_raw != 0) return $margin_raw;
+
+        $rate_user_tsc   = $this->_parse_number($map['Rate User-TSC'] ?? 0);
+        $rate_tsc_vendor = $this->_parse_number($map['Rate TSC-Vendor'] ?? 0);
+
+        if ($rate_tsc_vendor == 0) {
+            $rate_tsc_vendor = $this->_parse_number($map['Trip Cost to Vendor'] ?? 0)
+                + $this->_parse_number($map['Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)'] ?? 0)
+                + $this->_parse_number($map['PPH'] ?? 0);
+        }
+
+        return $rate_user_tsc - $rate_tsc_vendor;
+    }
+
+    // ── Helper: hitung rate_tsc_vendor sementara ──
+    private function _calc_rate_tsc_vendor($map)
+    {
+        $raw = $this->_parse_number($map['Rate TSC-Vendor'] ?? 0);
+        if ($raw > 0) return $raw;
+
+        return $this->_parse_number($map['Trip Cost to Vendor'] ?? 0)
+            + $this->_parse_number($map['Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)'] ?? 0)
+            + $this->_parse_number($map['PPH'] ?? 0);
     }
 
     // ════════════════════════════════════════════════════════════
@@ -48,12 +77,8 @@ class M_analytics extends CI_Model
         }
         fclose($handle);
 
-        // ════════════════════════════════════
-        // Cari baris header
-        // ════════════════════════════════════
         $header_idx = -1;
         $headers = [];
-
         $key_columns = ['Periode', 'Month', 'Project', 'Customer', 'Origin'];
 
         foreach ($rows as $i => $row) {
@@ -71,15 +96,10 @@ class M_analytics extends CI_Model
             return ['success' => false, 'message' => 'Header tidak ditemukan di CSV'];
         }
 
-        // Kalau kolom pertama header kosong → isi 'Periode'
         if (empty($headers[0])) {
             $headers[0] = 'Periode';
         }
 
-        // ════════════════════════════════════
-        // Kumpulkan periode yang ada di file
-        // Delete hanya periode tersebut (bukan semua sheet_type)
-        // ════════════════════════════════════
         $periode_in_file = [];
         for ($i = $header_idx + 1; $i < count($rows); $i++) {
             $row = $rows[$i];
@@ -97,14 +117,12 @@ class M_analytics extends CI_Model
             }
         }
 
-        // Delete hanya baris yang sheet_type + periode-nya match dengan file baru
         if (!empty($periode_in_file)) {
             $this->db
                 ->where('sheet_type', $sheet_type)
                 ->where_in('periode', array_keys($periode_in_file))
                 ->delete('tb_monitoring_shipment');
         } else {
-            // Fallback: kalau tidak ada periode terdeteksi, delete semua seperti semula
             $this->db->where('sheet_type', $sheet_type)->delete('tb_monitoring_shipment');
         }
 
@@ -113,7 +131,6 @@ class M_analytics extends CI_Model
         for ($i = $header_idx + 1; $i < count($rows); $i++) {
             $row = $rows[$i];
 
-            // Skip baris kosong (cek 5 kolom pertama)
             if (empty(array_filter(array_slice($row, 0, 5))))
                 continue;
 
@@ -230,34 +247,32 @@ class M_analytics extends CI_Model
             return null;
 
         return [
-            'sheet_type' => $sheet_type,
-            'periode' => $periode,
-            'customer' => trim($map['Customer'] ?? ''),
-            'origin' => trim($map['Origin'] ?? $map['ORIGIN'] ?? ''),
-            'dest_1' => trim($map['Dest 1'] ?? $map['Dest1'] ?? ''),
-            'dest_2' => trim($map['Dest2'] ?? $map['Dest 2'] ?? ''),
-            'truck_type' => trim($map['Truck Type'] ?? ''),
-            'start_date' => $this->_parse_date($map['Start Date SKO'] ?? $map['Start Date'] ?? ''),
-            'vendor' => trim($map['Vendor'] ?? ''),
-            'driver' => trim($map['Driver'] ?? ''),
-            'status' => trim($map['Status'] ?? ''),
-            'trip_cost_from_user' => $this->_parse_number($map['Trip Cost from User'] ?? 0),
-            'biaya_lain_user' => $this->_parse_number($map['Biaya Lain2 (Multidrop,TKBM,Parkir)'] ?? 0),
-            'rate_user_tsc' => $this->_parse_number($map['Rate User-TSC'] ?? 0),
-            'trip_cost_to_vendor' => $this->_parse_number($map['Trip Cost to Vendor'] ?? 0),
-            'pph' => $this->_parse_number($map['PPH'] ?? 0),
-            'biaya_lain_vendor' => $this->_parse_number($map['Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)'] ?? 0),
-            'rate_tsc_vendor' => $this->_parse_number($map['Rate TSC-Vendor'] ?? 0),
-            'margin' => $this->_parse_number($map['Margin'] ?? 0),
+            'sheet_type'            => $sheet_type,
+            'periode'               => $periode,
+            'customer'              => trim($map['Customer'] ?? ''),
+            'origin'                => trim($map['Origin'] ?? $map['ORIGIN'] ?? ''),
+            'dest_1'                => trim($map['Dest 1'] ?? $map['Dest1'] ?? ''),
+            'dest_2'                => trim($map['Dest2'] ?? $map['Dest 2'] ?? ''),
+            'truck_type'            => trim($map['Truck Type'] ?? ''),
+            'start_date'            => $this->_parse_date($map['Start Date SKO'] ?? $map['Start Date'] ?? ''),
+            'vendor'                => trim($map['Vendor'] ?? ''),
+            'driver'                => trim($map['Driver'] ?? ''),
+            'status'                => trim($map['Status'] ?? ''),
+            'trip_cost_from_user'   => $this->_parse_number($map['Trip Cost from User'] ?? 0),
+            'biaya_lain_user'       => $this->_parse_number($map['Biaya Lain2 (Multidrop,TKBM,Parkir)'] ?? 0),
+            'rate_user_tsc'         => $this->_parse_number($map['Rate User-TSC'] ?? 0),
+            'trip_cost_to_vendor'   => $this->_parse_number($map['Trip Cost to Vendor'] ?? 0),
+            'pph'                   => $this->_parse_number($map['PPH'] ?? 0),
+            'biaya_lain_vendor'     => $this->_parse_number($map['Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)'] ?? 0),
+            'rate_tsc_vendor'       => $this->_calc_rate_tsc_vendor($map),
+            'margin'                => $this->_calc_margin($map),
             'status_payment_vendor' => trim($map['Status Payment from Vendor'] ?? ''),
-            // ✅ FIX: pakai "Invoice paid from User?" bukan "Status Payment to User"
-            // "Status Payment to User" isinya nomor invoice, bukan status
-            'status_payment_user' => trim($map['Invoice paid from User?'] ?? ''),
-            'no_invoice_user' => trim($map['Status Payment to User'] ?? ''),
-            'project' => null,
-            'rent_hours' => null,
-            'end_date' => null,
-            'import_batch' => $batch_id,
+            'status_payment_user'   => trim($map['Invoice paid from User?'] ?? ''),
+            'no_invoice_user'       => trim($map['Status Payment to User'] ?? ''),
+            'project'               => null,
+            'rent_hours'            => null,
+            'end_date'              => null,
+            'import_batch'          => $batch_id,
         ];
     }
 
@@ -271,39 +286,37 @@ class M_analytics extends CI_Model
             return null;
 
         return [
-            'sheet_type' => $sheet_type,
-            'periode' => $periode,
-            'customer' => trim($map['Customer'] ?? ''),
-            'origin' => trim($map['Origin'] ?? ''),
-            'dest_1' => trim($map['Dest1'] ?? $map['Dest 1'] ?? ''),
-            'dest_2' => trim($map['Dest2'] ?? $map['Dest 2'] ?? ''),
-            'truck_type' => trim($map['Truck Type'] ?? ''),
-            'start_date' => $this->_parse_date($map['Start Date SKO'] ?? ''),
-            'vendor' => trim($map['Vendor'] ?? ''),
-            'driver' => trim($map['Driver'] ?? ''),
-            'status' => trim($map['Status'] ?? ''),
-            'trip_cost_from_user' => $this->_parse_number($map['Trip Cost from User'] ?? 0),
-            'biaya_lain_user' => $this->_parse_number($map['Biaya Lain2 (Multidrop,TKBM,Parkir)'] ?? 0),
-            'rate_user_tsc' => $this->_parse_number($map['Rate User-TSC'] ?? 0),
-            'trip_cost_to_vendor' => $this->_parse_number($map['Trip Cost to Vendor'] ?? 0),
-            'pph' => 0,
-            'biaya_lain_vendor' => $this->_parse_number($map['Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)'] ?? 0),
-            'rate_tsc_vendor' => $this->_parse_number($map['Rate TSC-Vendor'] ?? 0),
-            'margin' => $this->_parse_number($map['Margin'] ?? 0),
+            'sheet_type'            => $sheet_type,
+            'periode'               => $periode,
+            'customer'              => trim($map['Customer'] ?? ''),
+            'origin'                => trim($map['Origin'] ?? ''),
+            'dest_1'                => trim($map['Dest1'] ?? $map['Dest 1'] ?? ''),
+            'dest_2'                => trim($map['Dest2'] ?? $map['Dest 2'] ?? ''),
+            'truck_type'            => trim($map['Truck Type'] ?? ''),
+            'start_date'            => $this->_parse_date($map['Start Date SKO'] ?? ''),
+            'vendor'                => trim($map['Vendor'] ?? ''),
+            'driver'                => trim($map['Driver'] ?? ''),
+            'status'                => trim($map['Status'] ?? ''),
+            'trip_cost_from_user'   => $this->_parse_number($map['Trip Cost from User'] ?? 0),
+            'biaya_lain_user'       => $this->_parse_number($map['Biaya Lain2 (Multidrop,TKBM,Parkir)'] ?? 0),
+            'rate_user_tsc'         => $this->_parse_number($map['Rate User-TSC'] ?? 0),
+            'trip_cost_to_vendor'   => $this->_parse_number($map['Trip Cost to Vendor'] ?? 0),
+            'pph'                   => 0,
+            'biaya_lain_vendor'     => $this->_parse_number($map['Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)'] ?? 0),
+            'rate_tsc_vendor'       => $this->_calc_rate_tsc_vendor($map),
+            'margin'                => $this->_calc_margin($map),
             'status_payment_vendor' => trim($map['Status Payment from Vendor'] ?? ''),
-            'status_payment_user' => trim($map['Invoice paid from User?'] ?? ''), // ✅ FIX
-            'no_invoice_user' => trim($map['Status Payment to User'] ?? ''),
-            'project' => null,
-            'rent_hours' => null,
-            'end_date' => null,
-            'import_batch' => $batch_id,
+            'status_payment_user'   => trim($map['Invoice paid from User?'] ?? ''),
+            'no_invoice_user'       => trim($map['Status Payment to User'] ?? ''),
+            'project'               => null,
+            'rent_hours'            => null,
+            'end_date'              => null,
+            'import_batch'          => $batch_id,
         ];
     }
 
     // ────────────────────────────────────────────────
     // MAPPER: FTL Dedicated
-    // Tidak ada kolom Customer → default 'SPX'
-    // Kolom Status isinya RIT2/RIT3/P (bukan trip status) → pakai Invoice paid
     // ────────────────────────────────────────────────
     private function _map_ftl_dedicated($map, $sheet_type, $batch_id)
     {
@@ -311,16 +324,14 @@ class M_analytics extends CI_Model
         if (empty($periode))
             return null;
 
-        // ✅ FIX: Status kolom sering NaN → fallback ke LT Number
         $raw_status = trim($map['Status'] ?? '');
 
-        // Bersihkan dulu: kalau Status isinya kode LT (bukan status), abaikan
         if (!empty($raw_status) && preg_match('/^LT[0-9A-Z]{5,}/i', $raw_status)) {
-            $raw_status = ''; // data entry salah kolom, reset
+            $raw_status = '';
         }
 
         if (empty($raw_status)) {
-            $lt_raw = trim($map['LT Number'] ?? '');
+            $lt_raw   = trim($map['LT Number'] ?? '');
             $lt_upper = strtoupper($lt_raw);
 
             if (in_array($lt_upper, ['NOT SUPPORT', 'NOT SUPPPORT'])) {
@@ -332,51 +343,46 @@ class M_analytics extends CI_Model
             } elseif (empty($lt_raw)) {
                 $raw_status = 'BELUM JALAN';
             } else {
-                // Ada kode LT asli → trip selesai
                 $raw_status = 'DONE';
             }
         }
 
-        // Normalisasi: P/RIT2/RIT3 → RUNNING
         $status = in_array(strtoupper($raw_status), ['P', 'RIT2', 'RIT 2', 'RIT3', 'R1T2'])
             ? 'RUNNING'
             : $raw_status;
 
         return [
-            'sheet_type' => $sheet_type,
-            'periode' => $periode,
-            'customer' => 'SPX',
-            'origin' => trim($map['Origin'] ?? ''),
-            'dest_1' => trim($map['Dest1'] ?? $map['Dest 1'] ?? ''),
-            'dest_2' => trim($map['Dest2'] ?? $map['Dest 2'] ?? ''),
-            'truck_type' => trim($map['Truck Type'] ?? ''),
-            'start_date' => $this->_parse_date($map['Start Date SKO'] ?? ''),
-            'vendor' => trim($map['Vendor'] ?? ''),
-            'driver' => trim($map['Driver'] ?? ''),
-            'status' => $status,
-            'trip_cost_from_user' => $this->_parse_number($map['Trip Cost from User'] ?? 0),
-            'biaya_lain_user' => $this->_parse_number($map['Biaya Lain2 (Multidrop,TKBM,Parkir)'] ?? 0),
-            'rate_user_tsc' => $this->_parse_number($map['Rate User-TSC'] ?? 0),
-            'trip_cost_to_vendor' => $this->_parse_number($map['Trip Cost to Vendor'] ?? 0),
-            'pph' => 0,
-            'biaya_lain_vendor' => $this->_parse_number($map['Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)'] ?? 0),
-            'rate_tsc_vendor' => $this->_parse_number($map['Rate TSC-Vendor'] ?? 0),
-            'margin' => $this->_parse_number($map['Margin'] ?? 0),
+            'sheet_type'            => $sheet_type,
+            'periode'               => $periode,
+            'customer'              => 'SPX',
+            'origin'                => trim($map['Origin'] ?? ''),
+            'dest_1'                => trim($map['Dest1'] ?? $map['Dest 1'] ?? ''),
+            'dest_2'                => trim($map['Dest2'] ?? $map['Dest 2'] ?? ''),
+            'truck_type'            => trim($map['Truck Type'] ?? ''),
+            'start_date'            => $this->_parse_date($map['Start Date SKO'] ?? ''),
+            'vendor'                => trim($map['Vendor'] ?? ''),
+            'driver'                => trim($map['Driver'] ?? ''),
+            'status'                => $status,
+            'trip_cost_from_user'   => $this->_parse_number($map['Trip Cost from User'] ?? 0),
+            'biaya_lain_user'       => $this->_parse_number($map['Biaya Lain2 (Multidrop,TKBM,Parkir)'] ?? 0),
+            'rate_user_tsc'         => $this->_parse_number($map['Rate User-TSC'] ?? 0),
+            'trip_cost_to_vendor'   => $this->_parse_number($map['Trip Cost to Vendor'] ?? 0),
+            'pph'                   => 0,
+            'biaya_lain_vendor'     => $this->_parse_number($map['Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)'] ?? 0),
+            'rate_tsc_vendor'       => $this->_calc_rate_tsc_vendor($map),
+            'margin'                => $this->_calc_margin($map),
             'status_payment_vendor' => trim($map['Invoice paid to Vendor?'] ?? $map['Status Payment from Vendor'] ?? ''),
-            'status_payment_user' => trim($map['Invoice paid from User?'] ?? ''),
-            'no_invoice_user' => trim($map['Status Payment to User'] ?? ''),
-            'project' => trim($map['No SKO'] ?? ''),
-            'rent_hours' => null,
-            'end_date' => null,
-            'import_batch' => $batch_id,
+            'status_payment_user'   => trim($map['Invoice paid from User?'] ?? ''),
+            'no_invoice_user'       => trim($map['Status Payment to User'] ?? ''),
+            'project'               => trim($map['No SKO'] ?? ''),
+            'rent_hours'            => null,
+            'end_date'              => null,
+            'import_batch'          => $batch_id,
         ];
     }
 
     // ────────────────────────────────────────────────
     // MAPPER: FTL COC SPX
-    // Tidak ada kolom Customer → default 'SPX'
-    // Multidrop Inner + Outer = biaya lain user
-    // Kolom Status kosong → default ke status payment vendor sebagai proxy
     // ────────────────────────────────────────────────
     private function _map_ftl_coc_spx($map, $sheet_type, $batch_id)
     {
@@ -384,16 +390,14 @@ class M_analytics extends CI_Model
         if (empty($periode))
             return null;
 
-        // ✅ FIX: Trip Cost from User 90% kosong → fallback ke Rate User-TSC
-        $trip_cost_raw = trim($map['Trip Cost from User'] ?? '');
+        $trip_cost_raw      = trim($map['Trip Cost from User'] ?? '');
         $trip_cost_from_user = !empty($trip_cost_raw)
             ? $this->_parse_number($trip_cost_raw)
             : $this->_parse_number($map['Rate User-TSC'] ?? 0);
 
-        // ✅ FIX: Status 100% NaN → fallback ke LT Number (sama seperti Dedicated)
         $raw_status = trim($map['Status'] ?? '');
         if (empty($raw_status)) {
-            $lt_raw = trim($map['LT Number'] ?? '');
+            $lt_raw   = trim($map['LT Number'] ?? '');
             $lt_upper = strtoupper($lt_raw);
 
             if (in_array($lt_upper, ['NOT SUPPORT', 'NOT SUPPPORT'])) {
@@ -405,7 +409,6 @@ class M_analytics extends CI_Model
             } elseif (empty($lt_raw)) {
                 $raw_status = 'BELUM JALAN';
             } else {
-                // Ada kode LT atau SJ → trip selesai
                 $raw_status = 'DONE';
             }
         }
@@ -414,75 +417,60 @@ class M_analytics extends CI_Model
             + $this->_parse_number($map['Multidrop Outer'] ?? 0);
 
         return [
-            'sheet_type' => $sheet_type,
-            'periode' => $periode,
-            'customer' => 'SPX',
-            'origin' => trim($map['Origin'] ?? ''),
-            'dest_1' => trim($map['Dest1'] ?? $map['Dest 1'] ?? ''),
-            'dest_2' => trim($map['Dest2'] ?? $map['Dest 2'] ?? ''),
-            'truck_type' => trim($map['Truck Type'] ?? ''),
-            'start_date' => $this->_parse_date($map['Start Date SKO'] ?? ''),
-            'vendor' => trim($map['Vendor'] ?? ''),
-            'driver' => trim($map['Driver'] ?? ''),
-            'status' => $raw_status,
-            'trip_cost_from_user' => $trip_cost_from_user,
-            'biaya_lain_user' => $biaya_lain_user,
-            'rate_user_tsc' => $this->_parse_number($map['Rate User-TSC'] ?? 0),
-            'trip_cost_to_vendor' => $this->_parse_number($map['Trip Cost to Vendor'] ?? 0),
-            'pph' => 0,
-            'biaya_lain_vendor' => $this->_parse_number($map['Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)'] ?? 0),
-            'rate_tsc_vendor' => $this->_parse_number($map['Rate TSC-Vendor'] ?? 0),
-            'margin' => $this->_parse_number($map['Margin'] ?? 0),
-            // ✅ FIX: pakai Invoice paid to Vendor? bukan Status Payment from Vendor
+            'sheet_type'            => $sheet_type,
+            'periode'               => $periode,
+            'customer'              => 'SPX',
+            'origin'                => trim($map['Origin'] ?? ''),
+            'dest_1'                => trim($map['Dest1'] ?? $map['Dest 1'] ?? ''),
+            'dest_2'                => trim($map['Dest2'] ?? $map['Dest 2'] ?? ''),
+            'truck_type'            => trim($map['Truck Type'] ?? ''),
+            'start_date'            => $this->_parse_date($map['Start Date SKO'] ?? ''),
+            'vendor'                => trim($map['Vendor'] ?? ''),
+            'driver'                => trim($map['Driver'] ?? ''),
+            'status'                => $raw_status,
+            'trip_cost_from_user'   => $trip_cost_from_user,
+            'biaya_lain_user'       => $biaya_lain_user,
+            'rate_user_tsc'         => $this->_parse_number($map['Rate User-TSC'] ?? 0),
+            'trip_cost_to_vendor'   => $this->_parse_number($map['Trip Cost to Vendor'] ?? 0),
+            'pph'                   => 0,
+            'biaya_lain_vendor'     => $this->_parse_number($map['Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)'] ?? 0),
+            'rate_tsc_vendor'       => $this->_calc_rate_tsc_vendor($map),
+            'margin'                => $this->_calc_margin($map),
             'status_payment_vendor' => trim($map['Invoice paid to Vendor?'] ?? $map['Status Payment from Vendor'] ?? ''),
-            'status_payment_user' => trim($map['Invoice paid from User?'] ?? ''),
-            'no_invoice_user' => trim($map['Status Payment to User'] ?? ''),
-            'project' => trim($map['SPX ID Number'] ?? ''),
-            'rent_hours' => null,
-            'end_date' => null,
-            'import_batch' => $batch_id,
+            'status_payment_user'   => trim($map['Invoice paid from User?'] ?? ''),
+            'no_invoice_user'       => trim($map['Status Payment to User'] ?? ''),
+            'project'               => trim($map['SPX ID Number'] ?? ''),
+            'rent_hours'            => null,
+            'end_date'              => null,
+            'import_batch'          => $batch_id,
         ];
     }
 
     // ────────────────────────────────────────────────
     // MAPPER: FTL Reguler SPX
-    // Kolom: Month (bukan Periode), Division = customer
-    // Ada Fulfillment Status untuk unfulfill
-    // ✅ FIX: vendor kolom ada spasi di depan + payment kolom benar
     // ────────────────────────────────────────────────
     private function _map_ftl_reguler_spx($map, $sheet_type, $batch_id)
     {
-        // ── Periode: kolom 'Month', bukan 'Periode' ──
         $periode = trim($map['Month'] ?? $map['Periode'] ?? '');
         if (empty($periode))
             return null;
 
-        // ── Status: prioritas Fulfillment Status > Progress Status ──
-        // Nilai Fulfillment: 'Fulfilled' | 'Not fulfilled'
-        // Nilai Progress   : 'DONE' | 'NOT FULLFILL' | '' (kosong)
         $fulfillment = trim($map['Fulfillment Status'] ?? '');
         $status = !empty($fulfillment)
             ? $fulfillment
             : trim($map['Progress Status'] ?? '');
 
-        // ── Revenue: Trip Cost from User kalau ada, fallback Rate User-TSC ──
-        // Banyak baris Trip Cost from User kosong karena hanya pakai charge overnight,
-        // revenue sebenarnya sudah tercermin di Rate User-TSC.
-        $trip_cost_raw = trim($map['Trip Cost from User'] ?? '');
+        $trip_cost_raw      = trim($map['Trip Cost from User'] ?? '');
         $trip_cost_from_user = !empty($trip_cost_raw)
             ? $this->_parse_number($trip_cost_raw)
             : $this->_parse_number($map['Rate User-TSC'] ?? 0);
 
-        // ── Biaya lain user = Multidrop Inner + Multidrop Outer + Charge overnight ──
         $biaya_lain_user = $this->_parse_number($map['Multidrop Inner'] ?? 0)
             + $this->_parse_number($map['Multidrop Outer'] ?? 0)
             + $this->_parse_number($map['Charge overnight'] ?? 0);
 
-        // ── Vendor: nama kolom bersih 'Vendor' (tidak ada spasi prefix di CSV ini) ──
-        // Tetap ada fallback ' Vendor' untuk antisipasi variasi export GSheets.
         $vendor = trim($map['Vendor'] ?? $map[' Vendor'] ?? '');
         if (empty($vendor)) {
-            // Last resort: cari case-insensitive jika ada typo spasi
             foreach ($map as $k => $v) {
                 if (strtolower(trim($k)) === 'vendor') {
                     $vendor = trim($v);
@@ -492,48 +480,32 @@ class M_analytics extends CI_Model
         }
 
         return [
-            'sheet_type' => $sheet_type,
-
-            // Identitas pengiriman
-            'periode' => $periode,
-            'customer' => trim($map['Division'] ?? 'SPX'),      // LH, dll
-            'origin' => trim($map['Origin'] ?? ''),
-            'dest_1' => trim($map['Dest1'] ?? $map['Dest 1'] ?? ''),
-            'dest_2' => trim($map['Dest2'] ?? $map['Dest 2'] ?? ''),
-            'truck_type' => trim($map['Type Unit'] ?? ''),         // WB, CDD, dll
-            'start_date' => $this->_parse_date($map['Start Date'] ?? $map['Start Date SKO'] ?? ''),
-            'end_date' => null,                                  // tidak ada di sheet ini
-            'vendor' => $vendor,
-            'driver' => trim($map['Driver'] ?? ''),
-            'status' => $status,
-
-            // Keuangan sisi user (revenue)
-            'trip_cost_from_user' => $trip_cost_from_user,
-            'biaya_lain_user' => $biaya_lain_user,
-            'rate_user_tsc' => $this->_parse_number($map['Rate User-TSC'] ?? 0),
-
-            // Keuangan sisi vendor (cost)
-            'trip_cost_to_vendor' => $this->_parse_number($map['Trip Cost to Vendor'] ?? 0),
-            'pph' => $this->_parse_number($map['PPH'] ?? 0),
-            'biaya_lain_vendor' => $this->_parse_number($map['Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)'] ?? 0),
-            'rate_tsc_vendor' => $this->_parse_number($map['Rate TSC-Vendor'] ?? 0),
-            'margin' => $this->_parse_number($map['Margin'] ?? 0),
-
-            // Status pembayaran
-            // 'Status Payment from Vendor' → isinya 'Invoice & SJ Received' / kosong
+            'sheet_type'            => $sheet_type,
+            'periode'               => $periode,
+            'customer'              => trim($map['Division'] ?? 'SPX'),
+            'origin'                => trim($map['Origin'] ?? ''),
+            'dest_1'                => trim($map['Dest1'] ?? $map['Dest 1'] ?? ''),
+            'dest_2'                => trim($map['Dest2'] ?? $map['Dest 2'] ?? ''),
+            'truck_type'            => trim($map['Type Unit'] ?? ''),
+            'start_date'            => $this->_parse_date($map['Start Date'] ?? $map['Start Date SKO'] ?? ''),
+            'end_date'              => null,
+            'vendor'                => $vendor,
+            'driver'                => trim($map['Driver'] ?? ''),
+            'status'                => $status,
+            'trip_cost_from_user'   => $trip_cost_from_user,
+            'biaya_lain_user'       => $biaya_lain_user,
+            'rate_user_tsc'         => $this->_parse_number($map['Rate User-TSC'] ?? 0),
+            'trip_cost_to_vendor'   => $this->_parse_number($map['Trip Cost to Vendor'] ?? 0),
+            'pph'                   => $this->_parse_number($map['PPH'] ?? 0),
+            'biaya_lain_vendor'     => $this->_parse_number($map['Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)'] ?? 0),
+            'rate_tsc_vendor'       => $this->_calc_rate_tsc_vendor($map),
+            'margin'                => $this->_calc_margin($map),
             'status_payment_vendor' => trim($map['Status Payment from Vendor'] ?? ''),
-            // 'Invoice paid from User?' → isinya 'Waiting Payment' / 'Waiting SJ & Invoice' / kosong
-            'status_payment_user' => trim($map['Invoice paid from User?'] ?? ''),
-            // 'Status Payment to User' → isinya nomor invoice TSC-SPX/xxxxx
-            'no_invoice_user' => trim($map['Status Payment to User'] ?? ''),
-
-            // Referensi
-            'project' => trim($map['SKO Number'] ?? ''),
-
-            // Tidak berlaku untuk sheet ini
-            'rent_hours' => null,
-
-            'import_batch' => $batch_id,
+            'status_payment_user'   => trim($map['Invoice paid from User?'] ?? ''),
+            'no_invoice_user'       => trim($map['Status Payment to User'] ?? ''),
+            'project'               => trim($map['SKO Number'] ?? ''),
+            'rent_hours'            => null,
+            'import_batch'          => $batch_id,
         ];
     }
 
@@ -547,35 +519,36 @@ class M_analytics extends CI_Model
             return null;
 
         return [
-            'sheet_type' => $sheet_type,
-            'periode' => $periode,
-            'customer' => trim($map['Customer'] ?? ''),
-            'division' => trim($map['Division'] ?? ''),        // ✅ tambah division
-            'origin' => trim($map['ORIGIN'] ?? $map['Origin'] ?? ''),
-            'dest_1' => null,
-            'dest_2' => null,
-            'truck_type' => trim($map['Type Unit'] ?? ''),
-            'start_date' => $this->_parse_date($map['Start Date'] ?? ''),
-            'end_date' => $this->_parse_date($map['End Date'] ?? ''),
-            'vendor' => trim($map['Vendor'] ?? ''),
-            'driver' => trim($map['DRIVER'] ?? $map['Driver'] ?? ''),
-            'status' => 'DONE',
-            'trip_cost_from_user' => $this->_parse_number($map['Trip Cost from User'] ?? 0),
-            'biaya_lain_user' => $this->_parse_number($map['Biaya Lain2 (Multidrop,TKBM,Parkir)'] ?? 0),
-            'rate_user_tsc' => $this->_parse_number($map['Rate User-TSC'] ?? 0),
-            'trip_cost_to_vendor' => $this->_parse_number($map['Trip Cost to Vendor'] ?? 0),
-            'pph' => $this->_parse_number($map['PPH'] ?? 0),
-            'biaya_lain_vendor' => $this->_parse_number($map['Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)'] ?? 0),
-            'rate_tsc_vendor' => $this->_parse_number($map['Rate TSC-Vendor'] ?? 0),
-            'margin' => $this->_parse_number($map['Margin'] ?? 0),
-            'status_payment_vendor' => trim($map['Invoice paid to Vendor?'] ?? ''),  // ✅ pakai kolom yang benar
-            'status_payment_user' => trim($map['Invoice paid from User?'] ?? ''),
-            'no_invoice_user' => trim($map['No Invoice'] ?? ''),               // ✅ fix dari null
-            'project' => trim($map['Project'] ?? ''),
-            'rent_hours' => trim($map['Rent Hours (12/24)'] ?? ''),
-            'import_batch' => $batch_id,
+            'sheet_type'            => $sheet_type,
+            'periode'               => $periode,
+            'customer'              => trim($map['Customer'] ?? ''),
+            'division'              => trim($map['Division'] ?? ''),
+            'origin'                => trim($map['ORIGIN'] ?? $map['Origin'] ?? ''),
+            'dest_1'                => null,
+            'dest_2'                => null,
+            'truck_type'            => trim($map['Type Unit'] ?? ''),
+            'start_date'            => $this->_parse_date($map['Start Date'] ?? ''),
+            'end_date'              => $this->_parse_date($map['End Date'] ?? ''),
+            'vendor'                => trim($map['Vendor'] ?? ''),
+            'driver'                => trim($map['DRIVER'] ?? $map['Driver'] ?? ''),
+            'status'                => 'DONE',
+            'trip_cost_from_user'   => $this->_parse_number($map['Trip Cost from User'] ?? 0),
+            'biaya_lain_user'       => $this->_parse_number($map['Biaya Lain2 (Multidrop,TKBM,Parkir)'] ?? 0),
+            'rate_user_tsc'         => $this->_parse_number($map['Rate User-TSC'] ?? 0),
+            'trip_cost_to_vendor'   => $this->_parse_number($map['Trip Cost to Vendor'] ?? 0),
+            'pph'                   => $this->_parse_number($map['PPH'] ?? 0),
+            'biaya_lain_vendor'     => $this->_parse_number($map['Biaya Lain2 (UJ kosongan, Multidrop,TKBM, Parkir)'] ?? 0),
+            'rate_tsc_vendor'       => $this->_calc_rate_tsc_vendor($map),
+            'margin'                => $this->_calc_margin($map),
+            'status_payment_vendor' => trim($map['Invoice paid to Vendor?'] ?? ''),
+            'status_payment_user'   => trim($map['Invoice paid from User?'] ?? ''),
+            'no_invoice_user'       => trim($map['No Invoice'] ?? ''),
+            'project'               => trim($map['Project'] ?? ''),
+            'rent_hours'            => trim($map['Rent Hours (12/24)'] ?? ''),
+            'import_batch'          => $batch_id,
         ];
     }
+
     // ════════════════════════════════════════════════════════════
     // ANALYTICS QUERIES
     // ════════════════════════════════════════════════════════════
@@ -632,28 +605,6 @@ class M_analytics extends CI_Model
         return $this->db->get()->result();
     }
 
-    // public function rute_unfulfill($filters = [])
-    // {
-    //     $this->db->select('
-    //         origin, dest_1, sheet_type,
-    //         COUNT(*) as total_unfulfill,
-    //         GROUP_CONCAT(DISTINCT status) as statuses
-    //     ');
-    //     $this->db->from('tb_monitoring_shipment');
-    //     $this->db->where('origin !=', '');
-    //     $this->db->where("(
-    //         LOWER(status) LIKE '%unfulfill%' OR
-    //         LOWER(status) LIKE '%unfulfilled%' OR
-    //         LOWER(status) LIKE '%cancel%' OR
-    //         LOWER(status) LIKE '%batal%' OR
-    //         LOWER(status) LIKE '%not support%'
-    //     )");
-    //     $this->_apply_filters($filters);
-    //     $this->db->group_by('origin, dest_1, sheet_type');
-    //     $this->db->order_by('total_unfulfill', 'DESC');
-    //     return $this->db->get()->result();
-    // }
-
     public function avg_shipment_per_bulan($filters = [])
     {
         $sub = $this->db->select('customer, periode, COUNT(*) as shipment_count', false)
@@ -675,27 +626,27 @@ class M_analytics extends CI_Model
     public function get_weekly_summary($date_from, $date_to, $sheet_type = '')
     {
         $this->db->select('
-        COUNT(*) as total_shipment,
-        SUM(trip_cost_from_user) as total_revenue,
-        SUM(margin) as total_margin,
-        COUNT(DISTINCT customer) as total_customer,
-        COUNT(DISTINCT vendor) as total_vendor,
-        SUM(CASE WHEN trip_cost_from_user = 0 OR trip_cost_from_user IS NULL THEN 1 ELSE 0 END) as bolong_revenue,
-        SUM(CASE WHEN margin = 0 OR margin IS NULL THEN 1 ELSE 0 END) as bolong_margin,
-        SUM(CASE WHEN vendor = "" OR vendor IS NULL THEN 1 ELSE 0 END) as bolong_vendor,
-        SUM(CASE
-            WHEN LOWER(status) LIKE "%unfulfill%"
-              OR LOWER(status) LIKE "%cancel%"
-              OR LOWER(status) LIKE "%not support%"
-              OR LOWER(status) LIKE "%standby%"
-              OR LOWER(status) = "belum jalan"
-              OR LOWER(status) = "off"
-            THEN 1 ELSE 0 END) as total_unfulfill,
-        SUM(CASE
-            WHEN LOWER(status_payment_user) LIKE "%waiting%"
-              OR status_payment_user = ""
-            THEN 1 ELSE 0 END) as pending_payment
-    ');
+            COUNT(*) as total_shipment,
+            SUM(trip_cost_from_user) as total_revenue,
+            SUM(margin) as total_margin,
+            COUNT(DISTINCT customer) as total_customer,
+            COUNT(DISTINCT vendor) as total_vendor,
+            SUM(CASE WHEN trip_cost_from_user = 0 OR trip_cost_from_user IS NULL THEN 1 ELSE 0 END) as bolong_revenue,
+            SUM(CASE WHEN margin = 0 OR margin IS NULL THEN 1 ELSE 0 END) as bolong_margin,
+            SUM(CASE WHEN vendor = "" OR vendor IS NULL THEN 1 ELSE 0 END) as bolong_vendor,
+            SUM(CASE
+                WHEN LOWER(status) LIKE "%unfulfill%"
+                  OR LOWER(status) LIKE "%cancel%"
+                  OR LOWER(status) LIKE "%not support%"
+                  OR LOWER(status) LIKE "%standby%"
+                  OR LOWER(status) = "belum jalan"
+                  OR LOWER(status) = "off"
+                THEN 1 ELSE 0 END) as total_unfulfill,
+            SUM(CASE
+                WHEN LOWER(status_payment_user) LIKE "%waiting%"
+                  OR status_payment_user = ""
+                THEN 1 ELSE 0 END) as pending_payment
+        ');
         $this->db->from('tb_monitoring_shipment');
         if (!empty($date_from))
             $this->db->where('start_date >=', $date_from);
@@ -709,24 +660,24 @@ class M_analytics extends CI_Model
     public function get_weekly_per_customer($date_from, $date_to, $sheet_type = '')
     {
         $this->db->select('
-        customer,
-        COUNT(*) as total_shipment,
-        SUM(trip_cost_from_user) as total_revenue,
-        SUM(margin) as total_margin,
-        ROUND(SUM(margin) / NULLIF(SUM(trip_cost_from_user), 0) * 100, 2) as margin_pct,
-        SUM(CASE
-            WHEN LOWER(status) LIKE "%unfulfill%"
-              OR LOWER(status) LIKE "%cancel%"
-              OR LOWER(status) LIKE "%not support%"
-              OR LOWER(status) LIKE "%standby%"
-              OR LOWER(status) = "belum jalan"
-              OR LOWER(status) = "off"
-            THEN 1 ELSE 0 END) as total_unfulfill,
-        SUM(CASE
-            WHEN LOWER(status_payment_user) LIKE "%waiting%"
-              OR status_payment_user = ""
-            THEN 1 ELSE 0 END) as pending_payment
-    ');
+            customer,
+            COUNT(*) as total_shipment,
+            SUM(trip_cost_from_user) as total_revenue,
+            SUM(margin) as total_margin,
+            ROUND(SUM(margin) / NULLIF(SUM(trip_cost_from_user), 0) * 100, 2) as margin_pct,
+            SUM(CASE
+                WHEN LOWER(status) LIKE "%unfulfill%"
+                  OR LOWER(status) LIKE "%cancel%"
+                  OR LOWER(status) LIKE "%not support%"
+                  OR LOWER(status) LIKE "%standby%"
+                  OR LOWER(status) = "belum jalan"
+                  OR LOWER(status) = "off"
+                THEN 1 ELSE 0 END) as total_unfulfill,
+            SUM(CASE
+                WHEN LOWER(status_payment_user) LIKE "%waiting%"
+                  OR status_payment_user = ""
+                THEN 1 ELSE 0 END) as pending_payment
+        ');
         $this->db->from('tb_monitoring_shipment');
         $this->db->where('customer !=', '');
         if (!empty($date_from))
@@ -743,7 +694,7 @@ class M_analytics extends CI_Model
     public function get_weekly_bolong($date_from, $date_to, $sheet_type = '')
     {
         $this->db->select('id, sheet_type, start_date, customer, origin, dest_1,
-        vendor, status, trip_cost_from_user, margin, status_payment_user');
+            vendor, status, trip_cost_from_user, margin, status_payment_user');
         $this->db->from('tb_monitoring_shipment');
         if (!empty($date_from))
             $this->db->where('start_date >=', $date_from);
@@ -764,7 +715,7 @@ class M_analytics extends CI_Model
     public function get_weekly_pending_payment($date_from, $date_to, $sheet_type = '')
     {
         $this->db->select('id, sheet_type, start_date, customer, origin, dest_1,
-        trip_cost_from_user, margin, status_payment_user, no_invoice_user');
+            trip_cost_from_user, margin, status_payment_user, no_invoice_user');
         $this->db->from('tb_monitoring_shipment');
         if (!empty($date_from))
             $this->db->where('start_date >=', $date_from);
@@ -773,10 +724,10 @@ class M_analytics extends CI_Model
         if (!empty($sheet_type))
             $this->db->where('sheet_type', $sheet_type);
         $this->db->where("(
-        LOWER(status_payment_user) LIKE '%waiting%' OR
-        LOWER(status_payment_user) LIKE '%pending%' OR
-        status_payment_user = ''
-    )");
+            LOWER(status_payment_user) LIKE '%waiting%' OR
+            LOWER(status_payment_user) LIKE '%pending%' OR
+            status_payment_user = ''
+        )");
         $this->db->order_by('trip_cost_from_user', 'DESC');
         return $this->db->get()->result();
     }
@@ -792,14 +743,14 @@ class M_analytics extends CI_Model
         if (!empty($sheet_type))
             $this->db->where('sheet_type', $sheet_type);
         $this->db->where("(
-        LOWER(status) LIKE '%unfulfill%' OR
-        LOWER(status) LIKE '%cancel%' OR
-        LOWER(status) LIKE '%batal%' OR
-        LOWER(status) LIKE '%not support%' OR
-        LOWER(status) LIKE '%standby%' OR
-        LOWER(status) = 'belum jalan' OR
-        LOWER(status) = 'off'
-    )");
+            LOWER(status) LIKE '%unfulfill%' OR
+            LOWER(status) LIKE '%cancel%' OR
+            LOWER(status) LIKE '%batal%' OR
+            LOWER(status) LIKE '%not support%' OR
+            LOWER(status) LIKE '%standby%' OR
+            LOWER(status) = 'belum jalan' OR
+            LOWER(status) = 'off'
+        )");
         $this->db->order_by('start_date', 'ASC');
         return $this->db->get()->result();
     }
@@ -843,21 +794,21 @@ class M_analytics extends CI_Model
     public function get_summary($filters = [])
     {
         $this->db->select('
-        COUNT(*) as total_shipment,
-        SUM(trip_cost_from_user) as total_revenue,
-        SUM(trip_cost_to_vendor) as total_cost,
-        SUM(margin) as total_margin,
-        COUNT(DISTINCT customer) as total_customer,
-        COUNT(DISTINCT vendor) as total_vendor,
-        SUM(CASE
-            WHEN LOWER(status) LIKE "%unfulfill%"
-              OR LOWER(status) LIKE "%cancel%"
-              OR LOWER(status) LIKE "%not support%"
-              OR LOWER(status) LIKE "%standby%"
-              OR LOWER(status) = "belum jalan"
-              OR LOWER(status) = "off"
-            THEN 1 ELSE 0 END) as total_unfulfill
-    ');
+            COUNT(*) as total_shipment,
+            SUM(trip_cost_from_user) as total_revenue,
+            SUM(trip_cost_to_vendor) as total_cost,
+            SUM(margin) as total_margin,
+            COUNT(DISTINCT customer) as total_customer,
+            COUNT(DISTINCT vendor) as total_vendor,
+            SUM(CASE
+                WHEN LOWER(status) LIKE "%unfulfill%"
+                  OR LOWER(status) LIKE "%cancel%"
+                  OR LOWER(status) LIKE "%not support%"
+                  OR LOWER(status) LIKE "%standby%"
+                  OR LOWER(status) = "belum jalan"
+                  OR LOWER(status) = "off"
+                THEN 1 ELSE 0 END) as total_unfulfill
+        ');
         $this->db->from('tb_monitoring_shipment');
         $this->_apply_filters($filters);
         return $this->db->get()->row();
@@ -871,9 +822,9 @@ class M_analytics extends CI_Model
         $this->db->group_by('periode, sheet_type');
         $this->db->order_by('sheet_type');
         $this->db->order_by("FIELD(UPPER(periode),
-        'JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI',
-        'JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'
-    )");
+            'JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI',
+            'JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'
+        )");
         return $this->db->get()->result();
     }
 
@@ -920,10 +871,10 @@ class M_analytics extends CI_Model
     public function get_daily_shipments($date_from, $date_to, $sheet_type = '', $status_filter = '', $customer = '', $origin = '')
     {
         $this->db->select('id, sheet_type, periode, customer, origin, dest_1, dest_2,
-        truck_type, start_date, vendor, driver, status,
-        trip_cost_from_user, rate_user_tsc, trip_cost_to_vendor,
-        rate_tsc_vendor, margin, status_payment_vendor, status_payment_user,
-        no_invoice_user, project, imported_at');
+            truck_type, start_date, vendor, driver, status,
+            trip_cost_from_user, rate_user_tsc, trip_cost_to_vendor,
+            rate_tsc_vendor, margin, status_payment_vendor, status_payment_user,
+            no_invoice_user, project, imported_at');
         $this->db->from('tb_monitoring_shipment');
 
         if (!empty($date_from))
@@ -948,20 +899,20 @@ class M_analytics extends CI_Model
             $this->db->group_end();
         } elseif ($status_filter === 'unfulfill') {
             $this->db->where("(
-            LOWER(status) LIKE '%unfulfill%' OR
-            LOWER(status) LIKE '%cancel%' OR
-            LOWER(status) LIKE '%batal%' OR
-            LOWER(status) LIKE '%not support%' OR
-            LOWER(status) LIKE '%standby%' OR
-            LOWER(status) = 'belum jalan' OR
-            LOWER(status) = 'off'
-        )");
+                LOWER(status) LIKE '%unfulfill%' OR
+                LOWER(status) LIKE '%cancel%' OR
+                LOWER(status) LIKE '%batal%' OR
+                LOWER(status) LIKE '%not support%' OR
+                LOWER(status) LIKE '%standby%' OR
+                LOWER(status) = 'belum jalan' OR
+                LOWER(status) = 'off'
+            )");
         } elseif ($status_filter === 'pending_payment') {
             $this->db->where("(
-            LOWER(status_payment_user) LIKE '%waiting%' OR
-            LOWER(status_payment_user) LIKE '%pending%' OR
-            status_payment_user = ''
-        )");
+                LOWER(status_payment_user) LIKE '%waiting%' OR
+                LOWER(status_payment_user) LIKE '%pending%' OR
+                status_payment_user = ''
+            )");
         }
 
         $this->db->order_by('start_date', 'DESC');
@@ -972,26 +923,26 @@ class M_analytics extends CI_Model
     public function get_daily_summary($date_from, $date_to, $sheet_type = '')
     {
         $this->db->select('
-        COUNT(*) as total_shipment,
-        SUM(trip_cost_from_user) as total_revenue,
-        SUM(margin) as total_margin,
-        COUNT(DISTINCT customer) as total_customer,
-        SUM(CASE WHEN trip_cost_from_user = 0 OR trip_cost_from_user IS NULL THEN 1 ELSE 0 END) as bolong_revenue,
-        SUM(CASE WHEN margin = 0 OR margin IS NULL THEN 1 ELSE 0 END) as bolong_margin,
-        SUM(CASE WHEN vendor = "" OR vendor IS NULL THEN 1 ELSE 0 END) as bolong_vendor,
-        SUM(CASE
-            WHEN LOWER(status) LIKE "%unfulfill%"
-              OR LOWER(status) LIKE "%cancel%"
-              OR LOWER(status) LIKE "%not support%"
-              OR LOWER(status) LIKE "%standby%"
-              OR LOWER(status) = "belum jalan"
-              OR LOWER(status) = "off"
-            THEN 1 ELSE 0 END) as total_unfulfill,
-        SUM(CASE
-            WHEN LOWER(status_payment_user) LIKE "%waiting%"
-              OR status_payment_user = ""
-            THEN 1 ELSE 0 END) as pending_payment
-    ');
+            COUNT(*) as total_shipment,
+            SUM(trip_cost_from_user) as total_revenue,
+            SUM(margin) as total_margin,
+            COUNT(DISTINCT customer) as total_customer,
+            SUM(CASE WHEN trip_cost_from_user = 0 OR trip_cost_from_user IS NULL THEN 1 ELSE 0 END) as bolong_revenue,
+            SUM(CASE WHEN margin = 0 OR margin IS NULL THEN 1 ELSE 0 END) as bolong_margin,
+            SUM(CASE WHEN vendor = "" OR vendor IS NULL THEN 1 ELSE 0 END) as bolong_vendor,
+            SUM(CASE
+                WHEN LOWER(status) LIKE "%unfulfill%"
+                  OR LOWER(status) LIKE "%cancel%"
+                  OR LOWER(status) LIKE "%not support%"
+                  OR LOWER(status) LIKE "%standby%"
+                  OR LOWER(status) = "belum jalan"
+                  OR LOWER(status) = "off"
+                THEN 1 ELSE 0 END) as total_unfulfill,
+            SUM(CASE
+                WHEN LOWER(status_payment_user) LIKE "%waiting%"
+                  OR status_payment_user = ""
+                THEN 1 ELSE 0 END) as pending_payment
+        ');
         $this->db->from('tb_monitoring_shipment');
         if (!empty($date_from))
             $this->db->where('start_date >=', $date_from);
@@ -1010,30 +961,29 @@ class M_analytics extends CI_Model
             ORDER BY start_date DESC LIMIT 90
         ")->result();
     }
+
     public function rute_unfulfill($filters = [])
     {
         $this->db->select('
-        origin, dest_1, sheet_type,
-        COUNT(*) as total_unfulfill,
-        GROUP_CONCAT(DISTINCT status) as statuses
-    ');
+            origin, dest_1, sheet_type,
+            COUNT(*) as total_unfulfill,
+            GROUP_CONCAT(DISTINCT status) as statuses
+        ');
         $this->db->from('tb_monitoring_shipment');
         $this->db->where('origin !=', '');
         $this->db->where("(
-        LOWER(status) LIKE '%unfulfill%' OR
-        LOWER(status) LIKE '%unfulfilled%' OR
-        LOWER(status) LIKE '%cancel%' OR
-        LOWER(status) LIKE '%batal%' OR
-        LOWER(status) LIKE '%not support%' OR
-        LOWER(status) LIKE '%standby%' OR
-        LOWER(status) = 'belum jalan' OR
-        LOWER(status) = 'off'
-    )");
+            LOWER(status) LIKE '%unfulfill%' OR
+            LOWER(status) LIKE '%unfulfilled%' OR
+            LOWER(status) LIKE '%cancel%' OR
+            LOWER(status) LIKE '%batal%' OR
+            LOWER(status) LIKE '%not support%' OR
+            LOWER(status) LIKE '%standby%' OR
+            LOWER(status) = 'belum jalan' OR
+            LOWER(status) = 'off'
+        )");
         $this->_apply_filters($filters);
         $this->db->group_by('origin, dest_1, sheet_type');
         $this->db->order_by('total_unfulfill', 'DESC');
         return $this->db->get()->result();
     }
-
-
 }
