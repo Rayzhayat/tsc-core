@@ -1,4 +1,4 @@
-<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+<?php defined('BASEPATH') or exit('No direct script access allowed'); ?>
 
 <div class="wrapper">
     <?php $this->load->view('partials/navbar') ?>
@@ -20,7 +20,7 @@
                             <i class="fas fa-calendar-week me-1"></i> Weekly Report
                         </a>
 
-                        <?php if (in_array($level, ['superadmin','finance_staff'])): ?>
+                        <?php if (in_array($level, ['superadmin', 'finance_staff'])): ?>
                             <a href="<?= base_url('analytics/import') ?>" class="btn btn-outline-primary btn-sm">
                                 <i class="fas fa-file-import me-1"></i> Import CSV
                             </a>
@@ -205,7 +205,7 @@
                                         <tbody>
                                             <?php foreach ($top_revenue as $i => $r): ?>
                                                 <tr>
-                                                    <td><span class="badge bg-warning text-dark"><?= $i+1 ?></span></td>
+                                                    <td><span class="badge bg-warning text-dark"><?= $i + 1 ?></span></td>
                                                     <td class="fw-semibold"><?= htmlspecialchars($r->customer) ?></td>
                                                     <td class="text-end small">Rp <?= number_format($r->total_revenue, 0, ',', '.') ?></td>
                                                     <td class="text-end small <?= $r->total_margin >= 0 ? 'text-success' : 'text-danger' ?>">
@@ -219,7 +219,9 @@
                                                 </tr>
                                             <?php endforeach ?>
                                             <?php if (empty($top_revenue)): ?>
-                                                <tr><td colspan="5" class="text-center text-muted py-3">Belum ada data</td></tr>
+                                                <tr>
+                                                    <td colspan="5" class="text-center text-muted py-3">Belum ada data</td>
+                                                </tr>
                                             <?php endif ?>
                                         </tbody>
                                     </table>
@@ -268,7 +270,9 @@
                                                 </tr>
                                             <?php endforeach ?>
                                             <?php if (empty($profitability)): ?>
-                                                <tr><td colspan="6" class="text-center text-muted py-3">Belum ada data</td></tr>
+                                                <tr>
+                                                    <td colspan="6" class="text-center text-muted py-3">Belum ada data</td>
+                                                </tr>
                                             <?php endif ?>
                                         </tbody>
                                     </table>
@@ -297,7 +301,7 @@
                                         <tbody>
                                             <?php foreach ($top_vendor as $i => $v): ?>
                                                 <tr>
-                                                    <td><span class="badge bg-info text-dark"><?= $i+1 ?></span></td>
+                                                    <td><span class="badge bg-info text-dark"><?= $i + 1 ?></span></td>
                                                     <td class="fw-semibold"><?= htmlspecialchars($v->vendor) ?></td>
                                                     <td class="text-center fw-bold"><?= number_format($v->total_trip) ?></td>
                                                     <td class="text-center"><?= $v->total_customer_dilayani ?></td>
@@ -305,7 +309,9 @@
                                                 </tr>
                                             <?php endforeach ?>
                                             <?php if (empty($top_vendor)): ?>
-                                                <tr><td colspan="5" class="text-center text-muted py-3">Belum ada data</td></tr>
+                                                <tr>
+                                                    <td colspan="5" class="text-center text-muted py-3">Belum ada data</td>
+                                                </tr>
                                             <?php endif ?>
                                         </tbody>
                                     </table>
@@ -339,7 +345,9 @@
                                                 </tr>
                                             <?php endforeach ?>
                                             <?php if (empty($avg_shipment)): ?>
-                                                <tr><td colspan="4" class="text-center text-muted py-3">Belum ada data</td></tr>
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted py-3">Belum ada data</td>
+                                                </tr>
                                             <?php endif ?>
                                         </tbody>
                                     </table>
@@ -380,9 +388,11 @@
                                                 </tr>
                                             <?php endforeach ?>
                                             <?php if (empty($rute_non_profitable)): ?>
-                                                <tr><td colspan="4" class="text-center text-muted py-3">
-                                                    <i class="fas fa-check-circle text-success me-1"></i> Semua rute profitable!
-                                                </td></tr>
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted py-3">
+                                                        <i class="fas fa-check-circle text-success me-1"></i> Semua rute profitable!
+                                                    </td>
+                                                </tr>
                                             <?php endif ?>
                                         </tbody>
                                     </table>
@@ -416,9 +426,11 @@
                                                 </tr>
                                             <?php endforeach ?>
                                             <?php if (empty($rute_unfulfill)): ?>
-                                                <tr><td colspan="4" class="text-center text-muted py-3">
-                                                    <i class="fas fa-check-circle text-success me-1"></i> Tidak ada unfulfill!
-                                                </td></tr>
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted py-3">
+                                                        <i class="fas fa-check-circle text-success me-1"></i> Tidak ada unfulfill!
+                                                    </td>
+                                                </tr>
                                             <?php endif ?>
                                         </tbody>
                                     </table>
@@ -435,222 +447,272 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-// ══════════════════════════════════════════════════════
-// DATA dari PHP
-// ══════════════════════════════════════════════════════
-const trendRaw = <?= json_encode(array_map(fn($r) => [
-    'periode'    => $r->periode,
-    'sheet_type' => $r->sheet_type,
-    'margin'     => (float)$r->total_margin,
-    'revenue'    => (float)$r->total_revenue,
-], $margin_trend)) ?>;
+    // ══════════════════════════════════════════════════════
+    // DATA dari PHP
+    // ══════════════════════════════════════════════════════
+    const trendRaw = <?= json_encode(array_map(fn($r) => [
+                            'periode'    => $r->periode,
+                            'sheet_type' => $r->sheet_type,
+                            'margin'     => (float)$r->total_margin,
+                            'revenue'    => (float)$r->total_revenue,
+                        ], $margin_trend)) ?>;
 
-const AJAX_FILTER_URL = '<?= base_url('analytics/ajax_filter_options') ?>';
-const CURRENT_PERIODE  = '<?= addslashes($filters['periode']) ?>';
-const CURRENT_CUSTOMER = '<?= addslashes($filters['customer']) ?>';
+    const AJAX_FILTER_URL = '<?= base_url('analytics/ajax_filter_options') ?>';
+    const CURRENT_PERIODE = '<?= addslashes($filters['periode']) ?>';
+    const CURRENT_CUSTOMER = '<?= addslashes($filters['customer']) ?>';
 
-// ── Warna per sheet type ──
-const SHEET_COLORS = {
-    'FTL_Non_SPX':     '#4e73df',
-    'Dailyrent':       '#1cc88a',
-    'FTL_A1_SPX':      '#f6c23e',
-    'FTL_Dedicated':   '#e74a3b',
-    'FTL_COC_SPX':     '#36b9cc',
-    'FTL_Reguler_SPX': '#6f42c1',
-};
-const FALLBACK_COLORS = ['#fd7e14','#20c997','#d63384','#0dcaf0','#adb5bd'];
+    // ── Warna per sheet type ──
+    const SHEET_COLORS = {
+        'FTL_Non_SPX': '#4e73df',
+        'Dailyrent': '#1cc88a',
+        'FTL_A1_SPX': '#f6c23e',
+        'FTL_Dedicated': '#e74a3b',
+        'FTL_COC_SPX': '#36b9cc',
+        'FTL_Reguler_SPX': '#6f42c1',
+    };
+    const FALLBACK_COLORS = ['#fd7e14', '#20c997', '#d63384', '#0dcaf0', '#adb5bd'];
 
-// ── Urutan bulan ──
-const MONTH_ORDER = [
-    'januari','februari','maret','april','mei','juni',
-    'juli','agustus','september','oktober','november','desember',
-    'january','february','march','april','may','june',
-    'july','august','september','october','november','december',
-];
+    // ── Urutan bulan ──
+    const MONTH_ORDER = [
+        'januari', 'februari', 'maret', 'april', 'mei', 'juni',
+        'juli', 'agustus', 'september', 'oktober', 'november', 'desember',
+        'january', 'february', 'march', 'april', 'may', 'june',
+        'july', 'august', 'september', 'october', 'november', 'december',
+    ];
 
-function monthIndex(p) {
-    const idx = MONTH_ORDER.indexOf(p.toLowerCase().trim());
-    if (idx !== -1) return idx % 12;
-    for (let i = 0; i < MONTH_ORDER.length; i++) {
-        if (p.toLowerCase().includes(MONTH_ORDER[i])) return i % 12;
+    function monthIndex(p) {
+        const idx = MONTH_ORDER.indexOf(p.toLowerCase().trim());
+        if (idx !== -1) return idx % 12;
+        for (let i = 0; i < MONTH_ORDER.length; i++) {
+            if (p.toLowerCase().includes(MONTH_ORDER[i])) return i % 12;
+        }
+        return 99;
     }
-    return 99;
-}
 
-// ══════════════════════════════════════════════════════
-// CHART
-// ══════════════════════════════════════════════════════
-let chartInstance = null;
+    // ══════════════════════════════════════════════════════
+    // CHART
+    // ══════════════════════════════════════════════════════
+    let chartInstance = null;
 
-function buildChart(mode) {
-    const canvas = document.getElementById('chartMarginTrend');
-    const labelSet = [...new Set(trendRaw.map(r => r.periode))];
-    const labels = labelSet.sort((a, b) => monthIndex(a) - monthIndex(b));
-    let datasets = [];
+    function buildChart(mode) {
+        const canvas = document.getElementById('chartMarginTrend');
+        const labelSet = [...new Set(trendRaw.map(r => r.periode))];
+        const labels = labelSet.sort((a, b) => monthIndex(a) - monthIndex(b));
+        let datasets = [];
 
-    if (mode === 'sheet') {
-        const sheets = [...new Set(trendRaw.map(r => r.sheet_type))];
-        let fallbackIdx = 0;
-        datasets = sheets.map(sheet => {
-            const color = SHEET_COLORS[sheet] || FALLBACK_COLORS[fallbackIdx++ % FALLBACK_COLORS.length];
-            return {
-                label: sheet,
-                data: labels.map(p => {
-                    const found = trendRaw.find(r =>
-                        r.sheet_type === sheet &&
-                        r.periode.toLowerCase().trim() === p.toLowerCase().trim()
-                    );
-                    return found ? found.margin : null;
-                }),
-                backgroundColor: color + '22',
-                borderColor: color,
-                borderWidth: 2,
-                tension: 0.4,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                spanGaps: false,
-                type: 'line',
-                fill: false,
+        if (mode === 'sheet') {
+            const sheets = [...new Set(trendRaw.map(r => r.sheet_type))];
+            let fallbackIdx = 0;
+            datasets = sheets.map(sheet => {
+                const color = SHEET_COLORS[sheet] || FALLBACK_COLORS[fallbackIdx++ % FALLBACK_COLORS.length];
+                return {
+                    label: sheet,
+                    data: labels.map(p => {
+                        const found = trendRaw.find(r =>
+                            r.sheet_type === sheet &&
+                            r.periode.toLowerCase().trim() === p.toLowerCase().trim()
+                        );
+                        return found ? found.margin : null;
+                    }),
+                    backgroundColor: color + '22',
+                    borderColor: color,
+                    borderWidth: 2,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    spanGaps: false,
+                    type: 'line',
+                    fill: false,
+                };
+            });
+        } else {
+            const totalByPeriode = {};
+            trendRaw.forEach(r => {
+                const key = r.periode.trim();
+                if (!totalByPeriode[key]) totalByPeriode[key] = {
+                    margin: 0,
+                    revenue: 0
+                };
+                totalByPeriode[key].margin += r.margin;
+                totalByPeriode[key].revenue += r.revenue;
+            });
+            datasets = [{
+                    label: 'Revenue',
+                    data: labels.map(p => totalByPeriode[p]?.revenue || 0),
+                    backgroundColor: 'rgba(78,115,223,0.15)',
+                    borderColor: '#4e73df',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    type: 'line',
+                    yAxisID: 'y1',
+                    fill: true,
+                },
+                {
+                    label: 'Margin',
+                    data: labels.map(p => totalByPeriode[p]?.margin || 0),
+                    backgroundColor: labels.map(p => (totalByPeriode[p]?.margin || 0) >= 0 ?
+                        'rgba(28,200,138,0.7)' :
+                        'rgba(231,74,59,0.7)'),
+                    borderColor: labels.map(p => (totalByPeriode[p]?.margin || 0) >= 0 ?
+                        '#1cc88a' :
+                        '#e74a3b'),
+                    borderWidth: 1,
+                    type: 'bar',
+                    yAxisID: 'y',
+                },
+            ];
+        }
+
+        if (chartInstance) {
+            chartInstance.destroy();
+            chartInstance = null;
+        }
+
+        if (trendRaw.length === 0) {
+            canvas.parentElement.innerHTML =
+                '<div class="text-center py-5 text-muted">' +
+                '<i class="fas fa-chart-line fa-3x mb-3 d-block opacity-25"></i>' +
+                '<p>Belum ada data. <a href="<?= base_url('analytics/import') ?>">Import CSV dulu</a></p></div>';
+            return;
+        }
+
+        const scalesConfig = mode === 'sheet' ?
+            {
+                y: {
+                    ticks: {
+                        callback: v => 'Rp ' + (v / 1e6).toFixed(0) + 'jt'
+                    },
+                    grid: {
+                        color: 'rgba(0,0,0,0.05)'
+                    }
+                }
+            } :
+            {
+                y: {
+                    type: 'linear',
+                    position: 'left',
+                    ticks: {
+                        callback: v => 'Rp ' + (v / 1e6).toFixed(0) + 'jt'
+                    },
+                    grid: {
+                        color: 'rgba(0,0,0,0.05)'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    position: 'right',
+                    grid: {
+                        drawOnChartArea: false
+                    },
+                    ticks: {
+                        callback: v => 'Rp ' + (v / 1e6).toFixed(0) + 'jt'
+                    }
+                },
             };
-        });
-    } else {
-        const totalByPeriode = {};
-        trendRaw.forEach(r => {
-            const key = r.periode.trim();
-            if (!totalByPeriode[key]) totalByPeriode[key] = { margin: 0, revenue: 0 };
-            totalByPeriode[key].margin  += r.margin;
-            totalByPeriode[key].revenue += r.revenue;
-        });
-        datasets = [
-            {
-                label: 'Revenue',
-                data: labels.map(p => totalByPeriode[p]?.revenue || 0),
-                backgroundColor: 'rgba(78,115,223,0.15)',
-                borderColor: '#4e73df',
-                borderWidth: 2,
-                tension: 0.4,
-                pointRadius: 4,
-                type: 'line',
-                yAxisID: 'y1',
-                fill: true,
+
+        chartInstance = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets
             },
-            {
-                label: 'Margin',
-                data: labels.map(p => totalByPeriode[p]?.margin || 0),
-                backgroundColor: labels.map(p => (totalByPeriode[p]?.margin || 0) >= 0
-                    ? 'rgba(28,200,138,0.7)'
-                    : 'rgba(231,74,59,0.7)'),
-                borderColor: labels.map(p => (totalByPeriode[p]?.margin || 0) >= 0
-                    ? '#1cc88a'
-                    : '#e74a3b'),
-                borderWidth: 1,
-                type: 'bar',
-                yAxisID: 'y',
-            },
-        ];
+            options: {
+                responsive: true,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            boxWidth: 12,
+                            font: {
+                                size: 11
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ctx.dataset.label + ': Rp ' + (ctx.parsed.y ?? 0).toLocaleString('id-ID')
+                        }
+                    }
+                },
+                scales: scalesConfig,
+            }
+        });
     }
 
-    if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+    buildChart('sheet');
+    document.getElementById('modeSheet').addEventListener('change', () => buildChart('sheet'));
+    document.getElementById('modeTotal').addEventListener('change', () => buildChart('total'));
 
-    if (trendRaw.length === 0) {
-        canvas.parentElement.innerHTML =
-            '<div class="text-center py-5 text-muted">' +
-            '<i class="fas fa-chart-line fa-3x mb-3 d-block opacity-25"></i>' +
-            '<p>Belum ada data. <a href="<?= base_url('analytics/import') ?>">Import CSV dulu</a></p></div>';
-        return;
+    // ══════════════════════════════════════════════════════
+    // DYNAMIC FILTER — Periode & Customer ikut Sheet Type
+    // ══════════════════════════════════════════════════════
+    function updateFilterDropdowns(sheetType) {
+        const selPeriode = document.getElementById('filterPeriode');
+        const selCustomer = document.getElementById('filterCustomer');
+        const loadingP = document.getElementById('periodeLoading');
+        const loadingC = document.getElementById('customerLoading');
+
+        // Tampilkan spinner
+        loadingP.classList.remove('d-none');
+        loadingC.classList.remove('d-none');
+        selPeriode.disabled = true;
+        selCustomer.disabled = true;
+
+        fetch(AJAX_FILTER_URL + '?sheet_type=' + encodeURIComponent(sheetType))
+            .then(r => r.json())
+            .then(data => {
+                // ── Update Periode ──
+                selPeriode.innerHTML = '<option value="">Semua Bulan</option>';
+                data.periode.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p;
+                    opt.textContent = p;
+                    if (p === CURRENT_PERIODE) opt.selected = true;
+                    selPeriode.appendChild(opt);
+                });
+
+                // ── Update Customer ──
+                selCustomer.innerHTML = '<option value="">Semua Customer</option>';
+                data.customer.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c;
+                    opt.textContent = c;
+                    if (c === CURRENT_CUSTOMER) opt.selected = true;
+                    selCustomer.appendChild(opt);
+                });
+            })
+            .catch(err => {
+                console.error('Filter AJAX error:', err);
+            })
+            .finally(() => {
+                // Sembunyikan spinner
+                loadingP.classList.add('d-none');
+                loadingC.classList.add('d-none');
+                selPeriode.disabled = false;
+                selCustomer.disabled = false;
+            });
     }
 
-    const scalesConfig = mode === 'sheet'
-        ? { y: { ticks: { callback: v => 'Rp ' + (v / 1e6).toFixed(0) + 'jt' }, grid: { color: 'rgba(0,0,0,0.05)' } } }
-        : {
-            y:  { type: 'linear', position: 'left',  ticks: { callback: v => 'Rp ' + (v / 1e6).toFixed(0) + 'jt' }, grid: { color: 'rgba(0,0,0,0.05)' } },
-            y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => 'Rp ' + (v / 1e6).toFixed(0) + 'jt' } },
-          };
-
-    chartInstance = new Chart(canvas, {
-        type: 'bar',
-        data: { labels, datasets },
-        options: {
-            responsive: true,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-                legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
-                tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': Rp ' + (ctx.parsed.y ?? 0).toLocaleString('id-ID') } }
-            },
-            scales: scalesConfig,
+    // ── Event listener saat sheet type diganti ──
+    document.getElementById('filterSheetType').addEventListener('change', function() {
+        if (this.value) {
+            updateFilterDropdowns(this.value);
+        } else {
+            // Reset ke semua — reload page tanpa filter lebih simpel & konsisten
+            window.location.href = '<?= base_url('analytics') ?>';
         }
     });
-}
 
-buildChart('sheet');
-document.getElementById('modeSheet').addEventListener('change', () => buildChart('sheet'));
-document.getElementById('modeTotal').addEventListener('change', () => buildChart('total'));
-
-// ══════════════════════════════════════════════════════
-// DYNAMIC FILTER — Periode & Customer ikut Sheet Type
-// ══════════════════════════════════════════════════════
-function updateFilterDropdowns(sheetType) {
-    const selPeriode  = document.getElementById('filterPeriode');
-    const selCustomer = document.getElementById('filterCustomer');
-    const loadingP    = document.getElementById('periodeLoading');
-    const loadingC    = document.getElementById('customerLoading');
-
-    // Tampilkan spinner
-    loadingP.classList.remove('d-none');
-    loadingC.classList.remove('d-none');
-    selPeriode.disabled  = true;
-    selCustomer.disabled = true;
-
-    fetch(AJAX_FILTER_URL + '?sheet_type=' + encodeURIComponent(sheetType))
-        .then(r => r.json())
-        .then(data => {
-            // ── Update Periode ──
-            selPeriode.innerHTML = '<option value="">Semua Bulan</option>';
-            data.periode.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p;
-                opt.textContent = p;
-                if (p === CURRENT_PERIODE) opt.selected = true;
-                selPeriode.appendChild(opt);
-            });
-
-            // ── Update Customer ──
-            selCustomer.innerHTML = '<option value="">Semua Customer</option>';
-            data.customer.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c;
-                opt.textContent = c;
-                if (c === CURRENT_CUSTOMER) opt.selected = true;
-                selCustomer.appendChild(opt);
-            });
-        })
-        .catch(err => {
-            console.error('Filter AJAX error:', err);
-        })
-        .finally(() => {
-            // Sembunyikan spinner
-            loadingP.classList.add('d-none');
-            loadingC.classList.add('d-none');
-            selPeriode.disabled  = false;
-            selCustomer.disabled = false;
-        });
-}
-
-// ── Event listener saat sheet type diganti ──
-document.getElementById('filterSheetType').addEventListener('change', function () {
-    if (this.value) {
-        updateFilterDropdowns(this.value);
-    } else {
-        // Reset ke semua — reload page tanpa filter lebih simpel & konsisten
-        window.location.href = '<?= base_url('analytics') ?>';
-    }
-});
-
-// ── Trigger saat page load kalau sheet_type sudah ada di URL ──
-(function () {
-    const initSheet = document.getElementById('filterSheetType').value;
-    if (initSheet) {
-        updateFilterDropdowns(initSheet);
-    }
-})();
+    // ── Trigger saat page load kalau sheet_type sudah ada di URL ──
+    (function() {
+        const initSheet = document.getElementById('filterSheetType').value;
+        if (initSheet) {
+            updateFilterDropdowns(initSheet);
+        }
+    })();
 </script>
