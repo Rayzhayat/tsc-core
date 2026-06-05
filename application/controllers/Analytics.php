@@ -36,7 +36,7 @@ class Analytics extends CI_Controller
         $data['filters'] = $filters;
 
         // Dropdown options
-        $data['periode_list'] = $this->M_analytics->get_periode_list();
+        $data['periode_list'] = $this->M_analytics->get_periode_list($filters['sheet_type']);
         $data['sheet_type_list'] = $this->M_analytics->get_sheet_type_list();
         $data['customer_list'] = $this->M_analytics->get_customer_list();
 
@@ -166,7 +166,7 @@ class Analytics extends CI_Controller
         $data = [];
         switch ($type) {
             case 'margin_trend':
-                
+
                 $rows = $this->M_analytics->margin_trend($filters);
                 $data = [
                     'labels' => array_column($rows, 'periode'),
@@ -257,13 +257,13 @@ class Analytics extends CI_Controller
     }
 
     // ── AJAX: dropdown Periode & Customer dinamis berdasarkan sheet_type ──
+    // ── AJAX: dropdown Periode & Customer dinamis berdasarkan sheet_type ──
     public function ajax_filter_options()
     {
         // Bypass semua CI output handling
         header('Content-Type: application/json');
-        header('X-Debug: reached');
+        header('Cache-Control: no-cache');
 
-        // Matikan semua error display, tulis ke log saja
         ini_set('display_errors', 0);
         error_reporting(E_ALL);
 
@@ -275,89 +275,127 @@ class Analytics extends CI_Controller
 
         $sheet_type = $this->input->get('sheet_type');
 
+        // Urutan bulan untuk sorting
+        $bulan_order = [
+            'januari' => 1,
+            'january' => 1,
+            'februari' => 2,
+            'february' => 2,
+            'maret' => 3,
+            'march' => 3,
+            'april' => 4,
+            'mei' => 5,
+            'may' => 5,
+            'juni' => 6,
+            'june' => 6,
+            'juli' => 7,
+            'july' => 7,
+            'agustus' => 8,
+            'august' => 8,
+            'september' => 9,
+            'oktober' => 10,
+            'october' => 10,
+            'november' => 11,
+            'desember' => 12,
+            'december' => 12,
+        ];
+
+        // Map normalisasi periode (sama persis dengan _normalize_periode di model)
+        $normalize_map = [
+            'january' => 'JANUARI',
+            'januari' => 'JANUARI',
+            'february' => 'FEBRUARI',
+            'februari' => 'FEBRUARI',
+            'march' => 'MARET',
+            'maret' => 'MARET',
+            'april' => 'APRIL',
+            'may' => 'MEI',
+            'mei' => 'MEI',
+            'june' => 'JUNI',
+            'juni' => 'JUNI',
+            'july' => 'JULI',
+            'juli' => 'JULI',
+            'august' => 'AGUSTUS',
+            'agustus' => 'AGUSTUS',
+            'september' => 'SEPTEMBER',
+            'october' => 'OKTOBER',
+            'oktober' => 'OKTOBER',
+            'november' => 'NOVEMBER',
+            'december' => 'DESEMBER',
+            'desember' => 'DESEMBER',
+        ];
+
         try {
             $periode_rows = [];
             $customer_rows = [];
 
             if (!empty($sheet_type)) {
                 $q1 = $this->db->query(
-                    "SELECT DISTINCT periode FROM tb_monitoring_shipment 
-                 WHERE sheet_type = ? AND periode != '' 
-                 ORDER BY periode ASC",
+                    "SELECT DISTINCT periode FROM tb_monitoring_shipment
+                     WHERE sheet_type = ? AND periode != ''",
+                    [$sheet_type]
+                );
+                $q2 = $this->db->query(
+                    "SELECT DISTINCT customer FROM tb_monitoring_shipment
+                     WHERE sheet_type = ? AND customer != ''
+                     ORDER BY customer ASC",
                     [$sheet_type]
                 );
                 $periode_raw = $q1->result_array();
-
-                $q2 = $this->db->query(
-                    "SELECT DISTINCT customer FROM tb_monitoring_shipment 
-                 WHERE sheet_type = ? AND customer != '' 
-                 ORDER BY customer ASC",
-                    [$sheet_type]
-                );
                 $customer_raw = $q2->result_array();
-
-                // Sort bulan di PHP
-                $bulan_order = [
-                    'januari' => 1,
-                    'februari' => 2,
-                    'maret' => 3,
-                    'april' => 4,
-                    'mei' => 5,
-                    'juni' => 6,
-                    'juli' => 7,
-                    'agustus' => 8,
-                    'september' => 9,
-                    'oktober' => 10,
-                    'november' => 11,
-                    'desember' => 12,
-                    'january' => 1,
-                    'february' => 2,
-                    'march' => 3,
-                    'may' => 5,
-                    'june' => 6,
-                    'july' => 7,
-                    'august' => 8,
-                    'october' => 10,
-                    'december' => 12,
-                ];
-
-                usort($periode_raw, function ($a, $b) use ($bulan_order) {
-                    $ka = $bulan_order[strtolower(trim($a['periode']))] ?? 99;
-                    $kb = $bulan_order[strtolower(trim($b['periode']))] ?? 99;
-                    return $ka - $kb;
-                });
-
-                $periode_rows = array_column($periode_raw, 'periode');
-                $customer_rows = array_column($customer_raw, 'customer');
-
             } else {
                 $q1 = $this->db->query(
-                    "SELECT DISTINCT periode FROM tb_monitoring_shipment 
-                 WHERE periode != '' ORDER BY periode ASC"
+                    "SELECT DISTINCT periode FROM tb_monitoring_shipment WHERE periode != ''"
                 );
                 $q2 = $this->db->query(
-                    "SELECT DISTINCT customer FROM tb_monitoring_shipment 
-                 WHERE customer != '' ORDER BY customer ASC"
+                    "SELECT DISTINCT customer FROM tb_monitoring_shipment WHERE customer != '' ORDER BY customer ASC"
                 );
-                $periode_rows = array_column($q1->result_array(), 'periode');
-                $customer_rows = array_column($q2->result_array(), 'customer');
+                $periode_raw = $q1->result_array();
+                $customer_raw = $q2->result_array();
             }
+
+            // Normalisasi + deduplicate periode
+            $normalized_set = [];
+            foreach ($periode_raw as $row) {
+                $raw = trim($row['periode']);
+                $key = strtolower($raw);
+                $norm = $normalize_map[$key] ?? strtoupper($raw);
+                $normalized_set[$norm] = true; // deduplicate
+            }
+
+            // Sort berdasarkan urutan bulan
+            $periode_list = array_keys($normalized_set);
+            usort($periode_list, function ($a, $b) use ($bulan_order) {
+                $ka = $bulan_order[strtolower(trim($a))] ?? 99;
+                $kb = $bulan_order[strtolower(trim($b))] ?? 99;
+                return $ka - $kb;
+            });
+
+            // Customer — normalisasi UPPERCASE + deduplicate
+            $customer_set = [];
+            foreach ($customer_raw as $row) {
+                $norm = strtoupper(trim($row['customer']));
+                if (!empty($norm))
+                    $customer_set[$norm] = true;
+            }
+            $customer_list = array_keys($customer_set);
+            sort($customer_list);
 
             echo json_encode([
                 'success' => true,
-                'periode' => $periode_rows,
-                'customer' => $customer_rows,
+                'periode' => array_values($periode_list),
+                'customer' => array_values($customer_list),
             ]);
 
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            echo json_encode(['error' => $e->getMessage()]);
         } catch (Error $e) {
             http_response_code(500);
             echo json_encode(['error' => 'Fatal: ' . $e->getMessage()]);
         }
 
-        exit; // Penting: stop CI dari render apapun setelahnya
+        exit;
     }
 
     // ── Halaman Daily Monitoring ──

@@ -1,31 +1,30 @@
 <?php
-class MY_Controller extends CI_Controller {
+defined('BASEPATH') OR exit('No direct script access allowed');
 
-    protected $user;
-
-    public function __construct() {
+class MY_Controller extends CI_Controller
+{
+    public function __construct()
+    {
         parent::__construct();
-
-        // CEK SUDAH LOGIN?
-        if (!$this->session->userdata('login')) {
-            redirect('login');
-        }
-
-        $this->user = $this->session->userdata('login');
+        $this->_check_maintenance();
     }
 
-    // FUNGSI CEK AKSES
-    protected function hanya_superadmin() {
-        if ($this->user['user_level'] != 'superadmin') {
-            $this->session->set_flashdata('error', 'Akses ditolak! Hanya Superadmin.');
-            redirect('dashboard');
-        }
-    }
+    private function _check_maintenance()
+    {
+        // Bypass untuk superadmin & controller maintenance/login itu sendiri
+        $controller = $this->router->fetch_class();
+        $bypass     = ['maintenance', 'login', 'register'];
 
-    protected function akses($levels) {
-        if (!in_array($this->user['user_level'], (array)$levels)) {
-            $this->session->set_flashdata('error', 'Akses ditolak!');
-            redirect('dashboard');
-        }
+        if (in_array(strtolower($controller), $bypass)) return;
+
+        $row = $this->db->get_where('tb_setting', ['key' => 'maintenance_mode'])->row();
+        if (!$row || $row->value != '1') return;
+
+        // Superadmin tetap bisa masuk
+        $login = $this->session->userdata('login');
+        if ($login && $login['user_level'] === 'superadmin') return;
+
+        // Semua user lain — redirect ke halaman maintenance
+        redirect('maintenance');
     }
 }

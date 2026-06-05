@@ -12,10 +12,21 @@ $can_tms = in_array($level, ['superadmin', 'admin_operational', 'operational_sta
 
 
 $can_absensi = in_array($level, [
-    'superadmin', 'viewer', 'head_of_departemen', 'operational_lead',
-    'administration_lead', 'hr_staff', 'admin_operational', 'operational_staff',
-    'finance_staff', 'fleet_staff', 'admin_document',
-    'yamazaki', 'tsf', 'sinar_boga', 'rorotan',
+    'superadmin',
+    'viewer',
+    'head_of_departemen',
+    'operational_lead',
+    'administration_lead',
+    'hr_staff',
+    'admin_operational',
+    'operational_staff',
+    'finance_staff',
+    'fleet_staff',
+    'admin_document',
+    'yamazaki',
+    'tsf',
+    'sinar_boga',
+    'rorotan',
 ]);
 
 $can_master_customer_vendor = in_array($level, ['superadmin', 'finance_staff']);
@@ -24,9 +35,16 @@ $can_keluhan_driver = in_array($level, ['superadmin', 'admin_operational', 'oper
 
 // Report Center: siapa yang bisa lihat nav item-nya
 $can_report_center = in_array($level, [
-    'superadmin', 'finance_staff', 'admin_operational',
-    'operational_staff', 'fleet_staff', 'head_of_departemen',
-    'operational_lead', 'administration_lead', 'hr_staff', 'viewer',
+    'superadmin',
+    'finance_staff',
+    'admin_operational',
+    'operational_staff',
+    'fleet_staff',
+    'head_of_departemen',
+    'operational_lead',
+    'administration_lead',
+    'hr_staff',
+    'viewer',
 ]);
 
 $CI_nav = &get_instance();
@@ -73,7 +91,7 @@ $level_text = [
     'rorotan'             => 'Rorotan',
 ];
 ?>
-       
+
 <header class="navbar navbar-expand-lg navbar-dark bg-dark d-print-none sticky-top"
     style="box-shadow: 0 2px 8px rgba(0,0,0,.35); z-index: 1030;">
     <div class="container-fluid px-3">
@@ -230,6 +248,32 @@ $level_text = [
                             href="<?= base_url('security_monitor') ?>">
                             <span class="nav-link-icon"><i class="fas fa-shield-alt"></i></span>
                             <span class="nav-link-title">Security</span>
+                        </a>
+                    </li>
+                <?php endif ?>
+
+                <!-- MAINTENANCE TOGGLE -->
+                <?php if ($level === 'superadmin'):
+                    $maint_row = $CI_nav->db->get_where('tb_setting', ['key' => 'maintenance_mode'])->row();
+                    $is_maintenance = ($maint_row && $maint_row->value == '1');
+                ?>
+                    <li class="nav-item ms-1">
+                        <a class="nav-link d-flex align-items-center gap-2"
+                            href="#" id="maintenanceToggleBtn"
+                            title="<?= $is_maintenance ? 'Maintenance ON — klik untuk matikan' : 'Aktifkan Maintenance Mode' ?>">
+                            <span class="nav-link-icon">
+                                <i class="fas fa-tools <?= $is_maintenance ? 'text-warning' : '' ?>"></i>
+                            </span>
+                            <span class="d-none d-lg-inline" style="font-size:.75rem;">
+                                <span style="display:inline-flex;align-items:center;gap:5px;">
+                                    <span id="maintSwitchBg" style="width:34px;height:18px;border-radius:9px;background:<?= $is_maintenance ? '#f0a500' : '#555' ?>;position:relative;transition:background .3s;display:inline-block;">
+                                        <span id="maintSwitchThumb" style="width:12px;height:12px;border-radius:50%;background:#fff;position:absolute;top:3px;left:<?= $is_maintenance ? '19px' : '3px' ?>;transition:left .3s;display:inline-block;"></span>
+                                    </span>
+                                    <span id="maintLabel" style="color:<?= $is_maintenance ? '#f0a500' : 'rgba(255,255,255,.6)' ?>">
+                                        <?= $is_maintenance ? 'ON' : 'OFF' ?>
+                                    </span>
+                                </span>
+                            </span>
                         </a>
                     </li>
                 <?php endif ?>
@@ -433,7 +477,7 @@ $level_text = [
                     </li>
                 <?php endif ?>
 
-               <!-- ANALYTICS -->
+                <!-- ANALYTICS -->
                 <?php if (in_array($level, ['superadmin', 'finance_staff', 'head_of_departemen', 'operational_lead', 'operational_staff'])): ?>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle <?= in_array($aktif, ['analytics', 'feedback', 'prediction']) ? 'active' : '' ?>"
@@ -501,7 +545,8 @@ $level_text = [
                                 $open_ticket = $CI_nav->db->where('status', 'open')->count_all_results('tickets');
                                 if ($open_ticket > 0): ?>
                                     <span class="badge bg-danger ms-1"><?= $open_ticket ?></span>
-                                <?php endif; endif; ?>
+                            <?php endif;
+                            endif; ?>
                         </span>
                     </a>
                 </li>
@@ -556,132 +601,305 @@ $level_text = [
 </div>
 
 <style>
-    .navbar-brand { flex-shrink: 0 !important; }
-    .navbar-brand-image { max-height: 36px; width: auto; min-width: 60px; display: block; }
+    .navbar-brand {
+        flex-shrink: 0 !important;
+    }
+
+    .navbar-brand-image {
+        max-height: 36px;
+        width: auto;
+        min-width: 60px;
+        display: block;
+    }
 
     .logout-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: linear-gradient(135deg, rgba(30,58,95,.96) 0%, rgba(78,154,241,.96) 100%);
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, rgba(30, 58, 95, .96) 0%, rgba(78, 154, 241, .96) 100%);
         backdrop-filter: blur(10px);
-        display: none; justify-content: center; align-items: center;
-        z-index: 99999; opacity: 0; transition: opacity .4s ease;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 99999;
+        opacity: 0;
+        transition: opacity .4s ease;
     }
-    .logout-overlay.show { display: flex; opacity: 1; }
-    .logout-content { text-align: center; color: #fff; animation: fadeInUp .6s ease; }
+
+    .logout-overlay.show {
+        display: flex;
+        opacity: 1;
+    }
+
+    .logout-content {
+        text-align: center;
+        color: #fff;
+        animation: fadeInUp .6s ease;
+    }
+
     @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(30px); }
-        to   { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
-    .logout-icon { font-size: 80px; margin-bottom: 20px; }
-    .logout-spinner { margin: 20px auto; }
+
+    .logout-icon {
+        font-size: 80px;
+        margin-bottom: 20px;
+    }
+
+    .logout-spinner {
+        margin: 20px auto;
+    }
+
     .logout-spinner .spinner-border {
-        width: 60px; height: 60px; border-width: 4px;
-        border-color: rgba(255,255,255,.3); border-top-color: #fff;
+        width: 60px;
+        height: 60px;
+        border-width: 4px;
+        border-color: rgba(255, 255, 255, .3);
+        border-top-color: #fff;
     }
-    .logout-text    { font-size: 24px; font-weight: 600; margin-top: 20px; }
-    .logout-subtext { font-size: 16px; color: rgba(255,255,255,.8); margin-top: 8px; }
-    .logout-dots    { display: inline-flex; gap: 10px; margin-top: 20px; }
+
+    .logout-text {
+        font-size: 24px;
+        font-weight: 600;
+        margin-top: 20px;
+    }
+
+    .logout-subtext {
+        font-size: 16px;
+        color: rgba(255, 255, 255, .8);
+        margin-top: 8px;
+    }
+
+    .logout-dots {
+        display: inline-flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
     .logout-dots span {
-        width: 12px; height: 12px; background: #fff; border-radius: 50%;
+        width: 12px;
+        height: 12px;
+        background: #fff;
+        border-radius: 50%;
         animation: logoutBounce 1.4s infinite ease-in-out both;
     }
-    .logout-dots span:nth-child(1) { animation-delay: -.32s; }
-    .logout-dots span:nth-child(2) { animation-delay: -.16s; }
+
+    .logout-dots span:nth-child(1) {
+        animation-delay: -.32s;
+    }
+
+    .logout-dots span:nth-child(2) {
+        animation-delay: -.16s;
+    }
+
     @keyframes logoutBounce {
-        0%, 80%, 100% { transform: scale(0); opacity: .5; }
-        40%            { transform: scale(1); opacity: 1; }
+
+        0%,
+        80%,
+        100% {
+            transform: scale(0);
+            opacity: .5;
+        }
+
+        40% {
+            transform: scale(1);
+            opacity: 1;
+        }
     }
 
     .profile-selector-modal {
-        display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; padding: 8px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        padding: 8px;
     }
-    .profile-option-modal { position: relative; cursor: pointer; }
-    .profile-option-modal input[type=radio] { position: absolute; opacity: 0; }
+
+    .profile-option-modal {
+        position: relative;
+        cursor: pointer;
+    }
+
+    .profile-option-modal input[type=radio] {
+        position: absolute;
+        opacity: 0;
+    }
+
     .profile-option-modal img {
-        width: 100%; height: 80px; object-fit: cover; border-radius: 50%;
-        border: 3px solid #dee2e6; transition: all .3s ease;
+        width: 100%;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 3px solid #dee2e6;
+        transition: all .3s ease;
     }
-    .profile-option-modal input[type=radio]:checked + img {
-        border-color: #066fd1; box-shadow: 0 0 0 3px rgba(6,111,209,.2); transform: scale(1.05);
+
+    .profile-option-modal input[type=radio]:checked+img {
+        border-color: #066fd1;
+        box-shadow: 0 0 0 3px rgba(6, 111, 209, .2);
+        transform: scale(1.05);
     }
+
     .profile-option-modal .check-icon-modal {
-        position: absolute; top: -4px; right: 4px;
-        background: #066fd1; color: #fff; border-radius: 50%;
-        width: 24px; height: 24px; display: none;
-        align-items: center; justify-content: center; font-size: 12px;
+        position: absolute;
+        top: -4px;
+        right: 4px;
+        background: #066fd1;
+        color: #fff;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
     }
-    .profile-option-modal input[type=radio]:checked ~ .check-icon-modal { display: flex; }
+
+    .profile-option-modal input[type=radio]:checked~.check-icon-modal {
+        display: flex;
+    }
 </style>
 
 <script>
-(function () {
-    var _cache = [], _dropdownOpen = false;
-    function updateBadge(items) {
-        var unread = items.filter(function (n) { return !n.read; }).length;
-        var badge = document.getElementById('notifCount');
-        if (unread > 0) { badge.textContent = unread > 99 ? '99+' : unread; badge.style.display = ''; }
-        else { badge.style.display = 'none'; }
-    }
-    function renderList(items) {
-        var el = document.getElementById('notificationList');
-        if (!items.length) {
-            el.innerHTML = '<div class="text-center py-4 text-muted small"><i class="fas fa-bell-slash fa-2x mb-2 d-block"></i>Tidak ada notifikasi</div>';
-            return;
-        }
-        el.innerHTML = items.map(function (n) {
-            return '<a href="' + n.url + '" class="dropdown-item py-2 px-3 border-bottom' + (n.read ? ' text-muted' : '') + '" style="white-space:normal">' +
-                '<div class="d-flex align-items-start gap-2">' +
-                '<span class="mt-1"><i class="fas fa-' + n.icon + ' text-' + n.color + '"></i></span>' +
-                '<div class="flex-grow-1" style="min-width:0">' +
-                '<div class="small fw-' + (n.read ? 'normal' : 'bold') + ' text-truncate">' + n.title + '</div>' +
-                '<div class="text-muted" style="font-size:.75rem">' + n.body + '</div>' +
-                '<div class="text-muted" style="font-size:.7rem">' + n.time + '</div>' +
-                '</div>' +
-                (n.read ? '' : '<span class="badge bg-danger rounded-pill ms-1" style="font-size:.6rem">Baru</span>') +
-                '</div></a>';
-        }).join('');
-    }
-    function fetchNotif(renderAfter) {
-        fetch('<?= base_url("notifikasi/get") ?>')
-            .then(function (r) { return r.json(); })
-            .then(function (data) { _cache = data.items || []; updateBadge(_cache); if (renderAfter) renderList(_cache); })
-            .catch(function () {
-                if (renderAfter) {
-                    document.getElementById('notificationList').innerHTML =
-                        '<div class="text-center py-3 text-muted small"><i class="fas fa-exclamation-circle me-1"></i>Gagal memuat</div>';
-                }
-            });
-    }
-    var bellNavItem = document.getElementById('notifCount')?.closest('.nav-item');
-    if (bellNavItem) {
-        bellNavItem.addEventListener('show.bs.dropdown', function () { _dropdownOpen = true; if (_cache.length) renderList(_cache); fetchNotif(true); });
-        bellNavItem.addEventListener('hide.bs.dropdown', function () { _dropdownOpen = false; });
-    }
-    document.getElementById('markAllRead').addEventListener('click', function (e) {
-        e.preventDefault();
-        fetch('<?= base_url("notifikasi/mark_read") ?>', { method: 'POST' }).then(function () { fetchNotif(_dropdownOpen); });
-    });
-    fetchNotif(false);
-    setInterval(function () { if (!_dropdownOpen) fetchNotif(false); }, 60000);
-})();
+    (function() {
+        var _cache = [],
+            _dropdownOpen = false;
 
-// Badge broadcast
-(function() {
-    function fetchBcCount() {
-        fetch('<?= base_url("broadcast/count") ?>')
-            .then(r => r.json())
-            .then(d => {
-                var b = document.getElementById('broadcastBadge');
-                if (!b) return;
-                if (d.count > 0) {
-                    b.textContent = d.count > 99 ? '99+' : d.count;
-                    b.style.display = '';
-                } else {
-                    b.style.display = 'none';
-                }
-            }).catch(function(){});
-    }
-    fetchBcCount();
-    setInterval(fetchBcCount, 60000);
-})();
+        function updateBadge(items) {
+            var unread = items.filter(function(n) {
+                return !n.read;
+            }).length;
+            var badge = document.getElementById('notifCount');
+            if (unread > 0) {
+                badge.textContent = unread > 99 ? '99+' : unread;
+                badge.style.display = '';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function renderList(items) {
+            var el = document.getElementById('notificationList');
+            if (!items.length) {
+                el.innerHTML = '<div class="text-center py-4 text-muted small"><i class="fas fa-bell-slash fa-2x mb-2 d-block"></i>Tidak ada notifikasi</div>';
+                return;
+            }
+            el.innerHTML = items.map(function(n) {
+                return '<a href="' + n.url + '" class="dropdown-item py-2 px-3 border-bottom' + (n.read ? ' text-muted' : '') + '" style="white-space:normal">' +
+                    '<div class="d-flex align-items-start gap-2">' +
+                    '<span class="mt-1"><i class="fas fa-' + n.icon + ' text-' + n.color + '"></i></span>' +
+                    '<div class="flex-grow-1" style="min-width:0">' +
+                    '<div class="small fw-' + (n.read ? 'normal' : 'bold') + ' text-truncate">' + n.title + '</div>' +
+                    '<div class="text-muted" style="font-size:.75rem">' + n.body + '</div>' +
+                    '<div class="text-muted" style="font-size:.7rem">' + n.time + '</div>' +
+                    '</div>' +
+                    (n.read ? '' : '<span class="badge bg-danger rounded-pill ms-1" style="font-size:.6rem">Baru</span>') +
+                    '</div></a>';
+            }).join('');
+        }
+
+        function fetchNotif(renderAfter) {
+            fetch('<?= base_url("notifikasi/get") ?>')
+                .then(function(r) {
+                    return r.json();
+                })
+                .then(function(data) {
+                    _cache = data.items || [];
+                    updateBadge(_cache);
+                    if (renderAfter) renderList(_cache);
+                })
+                .catch(function() {
+                    if (renderAfter) {
+                        document.getElementById('notificationList').innerHTML =
+                            '<div class="text-center py-3 text-muted small"><i class="fas fa-exclamation-circle me-1"></i>Gagal memuat</div>';
+                    }
+                });
+        }
+        var bellNavItem = document.getElementById('notifCount')?.closest('.nav-item');
+        if (bellNavItem) {
+            bellNavItem.addEventListener('show.bs.dropdown', function() {
+                _dropdownOpen = true;
+                if (_cache.length) renderList(_cache);
+                fetchNotif(true);
+            });
+            bellNavItem.addEventListener('hide.bs.dropdown', function() {
+                _dropdownOpen = false;
+            });
+        }
+        document.getElementById('markAllRead').addEventListener('click', function(e) {
+            e.preventDefault();
+            fetch('<?= base_url("notifikasi/mark_read") ?>', {
+                method: 'POST'
+            }).then(function() {
+                fetchNotif(_dropdownOpen);
+            });
+        });
+        fetchNotif(false);
+        setInterval(function() {
+            if (!_dropdownOpen) fetchNotif(false);
+        }, 60000);
+    })();
+
+    // Badge broadcast
+    (function() {
+        function fetchBcCount() {
+            fetch('<?= base_url("broadcast/count") ?>')
+                .then(r => r.json())
+                .then(d => {
+                    var b = document.getElementById('broadcastBadge');
+                    if (!b) return;
+                    if (d.count > 0) {
+                        b.textContent = d.count > 99 ? '99+' : d.count;
+                        b.style.display = '';
+                    } else {
+                        b.style.display = 'none';
+                    }
+                }).catch(function() {});
+        }
+        fetchBcCount();
+        setInterval(fetchBcCount, 60000);
+    })();
+
+    (function() {
+        var btn = document.getElementById('maintenanceToggleBtn');
+        if (!btn) return;
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var label = document.getElementById('maintLabel');
+            var isOn = label && label.textContent.trim() === 'ON';
+            var msg = isOn ?
+                'Matikan Maintenance Mode? Semua user bisa akses kembali.' :
+                'Aktifkan Maintenance Mode? Semua user (kecuali superadmin) akan di-redirect ke halaman maintenance!';
+
+            if (!confirm(msg)) return;
+
+            fetch('<?= base_url("maintenance/toggle") ?>', {
+                    method: 'POST'
+                })
+                .then(r => r.json())
+                .then(d => {
+                    if (d.maintenance == '1') {
+                        document.getElementById('maintSwitchBg').style.background = '#f0a500';
+                        document.getElementById('maintSwitchThumb').style.left = '19px';
+                        document.getElementById('maintLabel').textContent = 'ON';
+                        document.getElementById('maintLabel').style.color = '#f0a500';
+                    } else {
+                        document.getElementById('maintSwitchBg').style.background = '#555';
+                        document.getElementById('maintSwitchThumb').style.left = '3px';
+                        document.getElementById('maintLabel').textContent = 'OFF';
+                        document.getElementById('maintLabel').style.color = 'rgba(255,255,255,.6)';
+                    }
+                })
+                .catch(() => alert('Gagal mengubah status maintenance.'));
+        });
+    })();
 </script>

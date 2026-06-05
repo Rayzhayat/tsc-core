@@ -9,7 +9,8 @@
                 <!-- Header -->
                 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                     <div>
-                        <h1 class="page-title mb-0"><i class="fas fa-chart-bar text-primary"></i> Analytics Dashboard</h1>
+                        <h1 class="page-title mb-0"><i class="fas fa-chart-bar text-primary"></i> Analytics Dashboard
+                        </h1>
                         <small class="text-muted">Data monitoring shipment TSC 2026</small>
                     </div>
                     <div class="d-flex gap-2 flex-wrap">
@@ -31,10 +32,18 @@
                                 <i class="fas fa-download me-1"></i> Export
                             </button>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="<?= base_url('analytics/export?type=profitability&' . http_build_query($filters)) ?>"><i class="fas fa-file-csv me-2 text-success"></i> Profitability</a></li>
-                                <li><a class="dropdown-item" href="<?= base_url('analytics/export?type=rute_non_profitable&' . http_build_query($filters)) ?>"><i class="fas fa-file-csv me-2 text-danger"></i> Rute Non Profitable</a></li>
-                                <li><a class="dropdown-item" href="<?= base_url('analytics/export?type=top_revenue&' . http_build_query($filters)) ?>"><i class="fas fa-file-csv me-2 text-warning"></i> Top Revenue</a></li>
-                                <li><a class="dropdown-item" href="<?= base_url('analytics/export?type=top_vendor&' . http_build_query($filters)) ?>"><i class="fas fa-file-csv me-2 text-info"></i> Top Vendor</a></li>
+                                <li><a class="dropdown-item"
+                                        href="<?= base_url('analytics/export?type=profitability&' . http_build_query($filters)) ?>"><i
+                                            class="fas fa-file-csv me-2 text-success"></i> Profitability</a></li>
+                                <li><a class="dropdown-item"
+                                        href="<?= base_url('analytics/export?type=rute_non_profitable&' . http_build_query($filters)) ?>"><i
+                                            class="fas fa-file-csv me-2 text-danger"></i> Rute Non Profitable</a></li>
+                                <li><a class="dropdown-item"
+                                        href="<?= base_url('analytics/export?type=top_revenue&' . http_build_query($filters)) ?>"><i
+                                            class="fas fa-file-csv me-2 text-warning"></i> Top Revenue</a></li>
+                                <li><a class="dropdown-item"
+                                        href="<?= base_url('analytics/export?type=top_vendor&' . http_build_query($filters)) ?>"><i
+                                            class="fas fa-file-csv me-2 text-info"></i> Top Vendor</a></li>
                             </ul>
                         </div>
                     </div>
@@ -43,7 +52,8 @@
                 <!-- Filter Bar -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-body py-2">
-                        <form method="GET" action="<?= base_url('analytics') ?>" class="row g-2 align-items-end" id="filterForm">
+                        <form method="GET" action="<?= base_url('analytics') ?>" class="row g-2 align-items-end"
+                            id="filterForm">
                             <div class="col-md-3 col-6">
                                 <label class="form-label small mb-1 fw-semibold">Sheet Type</label>
                                 <select name="sheet_type" class="form-select form-select-sm" id="filterSheetType">
@@ -59,7 +69,8 @@
                                 <label class="form-label small mb-1 fw-semibold">
                                     Periode
                                     <span id="periodeLoading" class="d-none">
-                                        <span class="spinner-border spinner-border-sm text-primary ms-1" style="width:.7rem;height:.7rem"></span>
+                                        <span class="spinner-border spinner-border-sm text-primary ms-1"
+                                            style="width:.7rem;height:.7rem"></span>
                                     </span>
                                 </label>
                                 <select name="periode" class="form-select form-select-sm" id="filterPeriode">
@@ -75,13 +86,15 @@
                                 <label class="form-label small mb-1 fw-semibold">
                                     Customer
                                     <span id="customerLoading" class="d-none">
-                                        <span class="spinner-border spinner-border-sm text-primary ms-1" style="width:.7rem;height:.7rem"></span>
+                                        <span class="spinner-border spinner-border-sm text-primary ms-1"
+                                            style="width:.7rem;height:.7rem"></span>
                                     </span>
                                 </label>
                                 <select name="customer" class="form-select form-select-sm" id="filterCustomer">
                                     <option value="">Semua Customer</option>
                                     <?php foreach ($customer_list as $c): ?>
-                                        <option value="<?= htmlspecialchars($c->customer) ?>" <?= $filters['customer'] == $c->customer ? 'selected' : '' ?>>
+                                        <option value="<?= htmlspecialchars($c->customer) ?>"
+                                            <?= $filters['customer'] == $c->customer ? 'selected' : '' ?>>
                                             <?= htmlspecialchars($c->customer) ?>
                                         </option>
                                     <?php endforeach ?>
@@ -121,15 +134,20 @@
                         <div class="card shadow h-100 py-2" style="border-left:4px solid #1cc88a">
                             <div class="card-body py-2 px-3">
                                 <div class="text-xs fw-bold text-success text-uppercase mb-1">Total Revenue</div>
-                                <div class="h6 mb-0 fw-bold">Rp <?= number_format($s->total_revenue ?? 0, 0, ',', '.') ?></div>
+                                <div class="h6 mb-0 fw-bold">Rp
+                                    <?= number_format($s->total_revenue ?? 0, 0, ',', '.') ?></div>
                             </div>
                         </div>
                     </div>
                     <div class="col-xl-2 col-md-4 col-6">
-                        <div class="card shadow h-100 py-2" style="border-left:4px solid <?= ($s->total_margin ?? 0) >= 0 ? '#1cc88a' : '#e74a3b' ?>">
+                        <div class="card shadow h-100 py-2"
+                            style="border-left:4px solid <?= ($s->total_margin ?? 0) >= 0 ? '#1cc88a' : '#e74a3b' ?>">
                             <div class="card-body py-2 px-3">
-                                <div class="text-xs fw-bold <?= ($s->total_margin ?? 0) >= 0 ? 'text-success' : 'text-danger' ?> text-uppercase mb-1">Total Margin</div>
-                                <div class="h6 mb-0 fw-bold <?= ($s->total_margin ?? 0) >= 0 ? 'text-success' : 'text-danger' ?>">
+                                <div
+                                    class="text-xs fw-bold <?= ($s->total_margin ?? 0) >= 0 ? 'text-success' : 'text-danger' ?> text-uppercase mb-1">
+                                    Total Margin</div>
+                                <div
+                                    class="h6 mb-0 fw-bold <?= ($s->total_margin ?? 0) >= 0 ? 'text-success' : 'text-danger' ?>">
                                     Rp <?= number_format($s->total_margin ?? 0, 0, ',', '.') ?>
                                 </div>
                             </div>
@@ -157,7 +175,8 @@
                         <div class="card shadow h-100 py-2" style="border-left:4px solid #e74a3b">
                             <div class="card-body py-2 px-3">
                                 <div class="text-xs fw-bold text-danger text-uppercase mb-1">Unfulfill</div>
-                                <div class="h5 mb-0 fw-bold text-danger"><?= number_format($s->total_unfulfill ?? 0) ?></div>
+                                <div class="h5 mb-0 fw-bold text-danger"><?= number_format($s->total_unfulfill ?? 0) ?>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -167,14 +186,18 @@
                 <div class="row g-3 mb-4">
                     <div class="col-lg-7">
                         <div class="card shadow h-100">
-                            <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                <h6 class="m-0 fw-bold text-primary"><i class="fas fa-chart-line me-2"></i> Trend Margin per Bulan</h6>
+                            <div
+                                class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <h6 class="m-0 fw-bold text-primary"><i class="fas fa-chart-line me-2"></i> Trend Margin
+                                    per Bulan</h6>
                                 <div class="d-flex align-items-center gap-2">
                                     <small class="text-muted">Tampilan:</small>
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <input type="radio" class="btn-check" name="chartMode" id="modeSheet" autocomplete="off" checked>
+                                        <input type="radio" class="btn-check" name="chartMode" id="modeSheet"
+                                            autocomplete="off" checked>
                                         <label class="btn btn-outline-primary btn-sm" for="modeSheet">Per Sheet</label>
-                                        <input type="radio" class="btn-check" name="chartMode" id="modeTotal" autocomplete="off">
+                                        <input type="radio" class="btn-check" name="chartMode" id="modeTotal"
+                                            autocomplete="off">
                                         <label class="btn btn-outline-secondary btn-sm" for="modeTotal">Total</label>
                                     </div>
                                 </div>
@@ -187,8 +210,10 @@
                     <div class="col-lg-5">
                         <div class="card shadow h-100">
                             <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                                <h6 class="m-0 fw-bold text-warning"><i class="fas fa-trophy me-2"></i> Top 5 Customer Revenue</h6>
-                                <a href="<?= base_url('analytics/export?type=top_revenue&' . http_build_query($filters)) ?>" class="btn btn-sm btn-outline-success"><i class="fas fa-download"></i></a>
+                                <h6 class="m-0 fw-bold text-warning"><i class="fas fa-trophy me-2"></i> Top 5 Customer
+                                    Revenue</h6>
+                                <a href="<?= base_url('analytics/export?type=top_revenue&' . http_build_query($filters)) ?>"
+                                    class="btn btn-sm btn-outline-success"><i class="fas fa-download"></i></a>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
@@ -207,12 +232,15 @@
                                                 <tr>
                                                     <td><span class="badge bg-warning text-dark"><?= $i + 1 ?></span></td>
                                                     <td class="fw-semibold"><?= htmlspecialchars($r->customer) ?></td>
-                                                    <td class="text-end small">Rp <?= number_format($r->total_revenue, 0, ',', '.') ?></td>
-                                                    <td class="text-end small <?= $r->total_margin >= 0 ? 'text-success' : 'text-danger' ?>">
+                                                    <td class="text-end small">Rp
+                                                        <?= number_format($r->total_revenue, 0, ',', '.') ?></td>
+                                                    <td
+                                                        class="text-end small <?= $r->total_margin >= 0 ? 'text-success' : 'text-danger' ?>">
                                                         Rp <?= number_format($r->total_margin, 0, ',', '.') ?>
                                                     </td>
                                                     <td class="text-center">
-                                                        <span class="badge <?= $r->margin_pct >= 0 ? 'bg-success' : 'bg-danger' ?>">
+                                                        <span
+                                                            class="badge <?= $r->margin_pct >= 0 ? 'bg-success' : 'bg-danger' ?>">
                                                             <?= $r->margin_pct ?>%
                                                         </span>
                                                     </td>
@@ -236,8 +264,10 @@
                     <div class="col-lg-7">
                         <div class="card shadow">
                             <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                                <h6 class="m-0 fw-bold text-success"><i class="fas fa-users me-2"></i> Profitability per Customer</h6>
-                                <a href="<?= base_url('analytics/export?type=profitability&' . http_build_query($filters)) ?>" class="btn btn-sm btn-outline-success"><i class="fas fa-download"></i></a>
+                                <h6 class="m-0 fw-bold text-success"><i class="fas fa-users me-2"></i> Profitability per
+                                    Customer</h6>
+                                <a href="<?= base_url('analytics/export?type=profitability&' . http_build_query($filters)) ?>"
+                                    class="btn btn-sm btn-outline-success"><i class="fas fa-download"></i></a>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive" style="max-height:350px; overflow-y:auto">
@@ -256,14 +286,18 @@
                                             <?php foreach ($profitability as $r): ?>
                                                 <tr>
                                                     <td class="fw-semibold"><?= htmlspecialchars($r->customer) ?></td>
-                                                    <td><span class="badge bg-secondary" style="font-size:.65rem"><?= $r->sheet_type ?></span></td>
+                                                    <td><span class="badge bg-secondary"
+                                                            style="font-size:.65rem"><?= $r->sheet_type ?></span></td>
                                                     <td class="text-center"><?= number_format($r->total_shipment) ?></td>
-                                                    <td class="text-end small">Rp <?= number_format($r->total_revenue, 0, ',', '.') ?></td>
-                                                    <td class="text-end small fw-semibold <?= $r->total_margin >= 0 ? 'text-success' : 'text-danger' ?>">
+                                                    <td class="text-end small">Rp
+                                                        <?= number_format($r->total_revenue, 0, ',', '.') ?></td>
+                                                    <td
+                                                        class="text-end small fw-semibold <?= $r->total_margin >= 0 ? 'text-success' : 'text-danger' ?>">
                                                         Rp <?= number_format($r->total_margin, 0, ',', '.') ?>
                                                     </td>
                                                     <td class="text-center">
-                                                        <span class="badge <?= $r->margin_pct >= 0 ? 'bg-success' : 'bg-danger' ?>">
+                                                        <span
+                                                            class="badge <?= $r->margin_pct >= 0 ? 'bg-success' : 'bg-danger' ?>">
                                                             <?= $r->margin_pct ?>%
                                                         </span>
                                                     </td>
@@ -283,8 +317,10 @@
                     <div class="col-lg-5">
                         <div class="card shadow">
                             <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                                <h6 class="m-0 fw-bold text-info"><i class="fas fa-truck me-2"></i> Top 5 Vendor Support</h6>
-                                <a href="<?= base_url('analytics/export?type=top_vendor&' . http_build_query($filters)) ?>" class="btn btn-sm btn-outline-info"><i class="fas fa-download"></i></a>
+                                <h6 class="m-0 fw-bold text-info"><i class="fas fa-truck me-2"></i> Top 5 Vendor Support
+                                </h6>
+                                <a href="<?= base_url('analytics/export?type=top_vendor&' . http_build_query($filters)) ?>"
+                                    class="btn btn-sm btn-outline-info"><i class="fas fa-download"></i></a>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
@@ -303,7 +339,8 @@
                                                 <tr>
                                                     <td><span class="badge bg-info text-dark"><?= $i + 1 ?></span></td>
                                                     <td class="fw-semibold"><?= htmlspecialchars($v->vendor) ?></td>
-                                                    <td class="text-center fw-bold"><?= number_format($v->total_trip) ?></td>
+                                                    <td class="text-center fw-bold"><?= number_format($v->total_trip) ?>
+                                                    </td>
                                                     <td class="text-center"><?= $v->total_customer_dilayani ?></td>
                                                     <td class="text-center"><?= $v->total_rute ?></td>
                                                 </tr>
@@ -322,7 +359,8 @@
                         <!-- Avg Shipment -->
                         <div class="card shadow mt-3">
                             <div class="card-header py-3">
-                                <h6 class="m-0 fw-bold" style="color:#6f42c1"><i class="fas fa-calendar-check me-2"></i> Rata-rata Shipment/Bulan/Customer</h6>
+                                <h6 class="m-0 fw-bold" style="color:#6f42c1"><i class="fas fa-calendar-check me-2"></i>
+                                    Rata-rata Shipment/Bulan/Customer</h6>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive" style="max-height:200px;overflow-y:auto">
@@ -361,9 +399,11 @@
                 <div class="row g-3 mb-4">
                     <div class="col-lg-6">
                         <div class="card shadow">
-                            <div class="card-header py-3 d-flex justify-content-between align-items-center bg-danger text-white">
+                            <div
+                                class="card-header py-3 d-flex justify-content-between align-items-center bg-danger text-white">
                                 <h6 class="m-0 fw-bold"><i class="fas fa-route me-2"></i> Rute Non Profitable</h6>
-                                <a href="<?= base_url('analytics/export?type=rute_non_profitable&' . http_build_query($filters)) ?>" class="btn btn-sm btn-light"><i class="fas fa-download"></i></a>
+                                <a href="<?= base_url('analytics/export?type=rute_non_profitable&' . http_build_query($filters)) ?>"
+                                    class="btn btn-sm btn-light"><i class="fas fa-download"></i></a>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive" style="max-height:320px;overflow-y:auto">
@@ -390,7 +430,8 @@
                                             <?php if (empty($rute_non_profitable)): ?>
                                                 <tr>
                                                     <td colspan="4" class="text-center text-muted py-3">
-                                                        <i class="fas fa-check-circle text-success me-1"></i> Semua rute profitable!
+                                                        <i class="fas fa-check-circle text-success me-1"></i> Semua rute
+                                                        profitable!
                                                     </td>
                                                 </tr>
                                             <?php endif ?>
@@ -403,7 +444,8 @@
                     <div class="col-lg-6">
                         <div class="card shadow">
                             <div class="card-header py-3 bg-warning">
-                                <h6 class="m-0 fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Rute Sering Unfulfill</h6>
+                                <h6 class="m-0 fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Rute Sering
+                                    Unfulfill</h6>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive" style="max-height:320px;overflow-y:auto">
@@ -421,14 +463,16 @@
                                                 <tr>
                                                     <td class="small"><?= htmlspecialchars($r->origin) ?></td>
                                                     <td class="small"><?= htmlspecialchars($r->dest_1) ?></td>
-                                                    <td class="text-center fw-bold text-danger"><?= $r->total_unfulfill ?></td>
+                                                    <td class="text-center fw-bold text-danger"><?= $r->total_unfulfill ?>
+                                                    </td>
                                                     <td class="small text-muted"><?= htmlspecialchars($r->statuses) ?></td>
                                                 </tr>
                                             <?php endforeach ?>
                                             <?php if (empty($rute_unfulfill)): ?>
                                                 <tr>
                                                     <td colspan="4" class="text-center text-muted py-3">
-                                                        <i class="fas fa-check-circle text-success me-1"></i> Tidak ada unfulfill!
+                                                        <i class="fas fa-check-circle text-success me-1"></i> Tidak ada
+                                                        unfulfill!
                                                     </td>
                                                 </tr>
                                             <?php endif ?>
@@ -451,11 +495,11 @@
     // DATA dari PHP
     // ══════════════════════════════════════════════════════
     const trendRaw = <?= json_encode(array_map(fn($r) => [
-                            'periode'    => $r->periode,
-                            'sheet_type' => $r->sheet_type,
-                            'margin'     => (float)$r->total_margin,
-                            'revenue'    => (float)$r->total_revenue,
-                        ], $margin_trend)) ?>;
+        'periode' => $r->periode,
+        'sheet_type' => $r->sheet_type,
+        'margin' => (float) $r->total_margin,
+        'revenue' => (float) $r->total_revenue,
+    ], $margin_trend)) ?>;
 
     const AJAX_FILTER_URL = '<?= base_url('analytics/ajax_filter_options') ?>';
     const CURRENT_PERIODE = '<?= addslashes($filters['periode']) ?>';
@@ -476,17 +520,11 @@
     const MONTH_ORDER = [
         'januari', 'februari', 'maret', 'april', 'mei', 'juni',
         'juli', 'agustus', 'september', 'oktober', 'november', 'desember',
-        'january', 'february', 'march', 'april', 'may', 'june',
-        'july', 'august', 'september', 'october', 'november', 'december',
     ];
 
     function monthIndex(p) {
         const idx = MONTH_ORDER.indexOf(p.toLowerCase().trim());
-        if (idx !== -1) return idx % 12;
-        for (let i = 0; i < MONTH_ORDER.length; i++) {
-            if (p.toLowerCase().includes(MONTH_ORDER[i])) return i % 12;
-        }
-        return 99;
+        return idx !== -1 ? idx : 99;
     }
 
     // ══════════════════════════════════════════════════════
@@ -529,14 +567,12 @@
             const totalByPeriode = {};
             trendRaw.forEach(r => {
                 const key = r.periode.trim();
-                if (!totalByPeriode[key]) totalByPeriode[key] = {
-                    margin: 0,
-                    revenue: 0
-                };
+                if (!totalByPeriode[key]) totalByPeriode[key] = { margin: 0, revenue: 0 };
                 totalByPeriode[key].margin += r.margin;
                 totalByPeriode[key].revenue += r.revenue;
             });
-            datasets = [{
+            datasets = [
+                {
                     label: 'Revenue',
                     data: labels.map(p => totalByPeriode[p]?.revenue || 0),
                     backgroundColor: 'rgba(78,115,223,0.15)',
@@ -551,12 +587,12 @@
                 {
                     label: 'Margin',
                     data: labels.map(p => totalByPeriode[p]?.margin || 0),
-                    backgroundColor: labels.map(p => (totalByPeriode[p]?.margin || 0) >= 0 ?
-                        'rgba(28,200,138,0.7)' :
-                        'rgba(231,74,59,0.7)'),
-                    borderColor: labels.map(p => (totalByPeriode[p]?.margin || 0) >= 0 ?
-                        '#1cc88a' :
-                        '#e74a3b'),
+                    backgroundColor: labels.map(p => (totalByPeriode[p]?.margin || 0) >= 0
+                        ? 'rgba(28,200,138,0.7)'
+                        : 'rgba(231,74,59,0.7)'),
+                    borderColor: labels.map(p => (totalByPeriode[p]?.margin || 0) >= 0
+                        ? '#1cc88a'
+                        : '#e74a3b'),
                     borderWidth: 1,
                     type: 'bar',
                     yAxisID: 'y',
@@ -577,61 +613,38 @@
             return;
         }
 
-        const scalesConfig = mode === 'sheet' ?
-            {
+        const scalesConfig = mode === 'sheet'
+            ? {
                 y: {
-                    ticks: {
-                        callback: v => 'Rp ' + (v / 1e6).toFixed(0) + 'jt'
-                    },
-                    grid: {
-                        color: 'rgba(0,0,0,0.05)'
-                    }
+                    ticks: { callback: v => 'Rp ' + (v / 1e6).toFixed(0) + 'jt' },
+                    grid: { color: 'rgba(0,0,0,0.05)' }
                 }
-            } :
-            {
+            }
+            : {
                 y: {
                     type: 'linear',
                     position: 'left',
-                    ticks: {
-                        callback: v => 'Rp ' + (v / 1e6).toFixed(0) + 'jt'
-                    },
-                    grid: {
-                        color: 'rgba(0,0,0,0.05)'
-                    }
+                    ticks: { callback: v => 'Rp ' + (v / 1e6).toFixed(0) + 'jt' },
+                    grid: { color: 'rgba(0,0,0,0.05)' }
                 },
                 y1: {
                     type: 'linear',
                     position: 'right',
-                    grid: {
-                        drawOnChartArea: false
-                    },
-                    ticks: {
-                        callback: v => 'Rp ' + (v / 1e6).toFixed(0) + 'jt'
-                    }
+                    grid: { drawOnChartArea: false },
+                    ticks: { callback: v => 'Rp ' + (v / 1e6).toFixed(0) + 'jt' }
                 },
             };
 
         chartInstance = new Chart(canvas, {
             type: 'bar',
-            data: {
-                labels,
-                datasets
-            },
+            data: { labels, datasets },
             options: {
                 responsive: true,
-                interaction: {
-                    mode: 'index',
-                    intersect: false
-                },
+                interaction: { mode: 'index', intersect: false },
                 plugins: {
                     legend: {
                         position: 'top',
-                        labels: {
-                            boxWidth: 12,
-                            font: {
-                                size: 11
-                            }
-                        }
+                        labels: { boxWidth: 12, font: { size: 11 } }
                     },
                     tooltip: {
                         callbacks: {
@@ -657,7 +670,6 @@
         const loadingP = document.getElementById('periodeLoading');
         const loadingC = document.getElementById('customerLoading');
 
-        // Tampilkan spinner
         loadingP.classList.remove('d-none');
         loadingC.classList.remove('d-none');
         selPeriode.disabled = true;
@@ -666,7 +678,6 @@
         fetch(AJAX_FILTER_URL + '?sheet_type=' + encodeURIComponent(sheetType))
             .then(r => r.json())
             .then(data => {
-                // ── Update Periode ──
                 selPeriode.innerHTML = '<option value="">Semua Bulan</option>';
                 data.periode.forEach(p => {
                     const opt = document.createElement('option');
@@ -676,7 +687,6 @@
                     selPeriode.appendChild(opt);
                 });
 
-                // ── Update Customer ──
                 selCustomer.innerHTML = '<option value="">Semua Customer</option>';
                 data.customer.forEach(c => {
                     const opt = document.createElement('option');
@@ -686,11 +696,8 @@
                     selCustomer.appendChild(opt);
                 });
             })
-            .catch(err => {
-                console.error('Filter AJAX error:', err);
-            })
+            .catch(err => console.error('Filter AJAX error:', err))
             .finally(() => {
-                // Sembunyikan spinner
                 loadingP.classList.add('d-none');
                 loadingC.classList.add('d-none');
                 selPeriode.disabled = false;
@@ -699,20 +706,13 @@
     }
 
     // ── Event listener saat sheet type diganti ──
-    document.getElementById('filterSheetType').addEventListener('change', function() {
+    document.getElementById('filterSheetType').addEventListener('change', function () {
         if (this.value) {
             updateFilterDropdowns(this.value);
         } else {
-            // Reset ke semua — reload page tanpa filter lebih simpel & konsisten
             window.location.href = '<?= base_url('analytics') ?>';
         }
     });
 
-    // ── Trigger saat page load kalau sheet_type sudah ada di URL ──
-    (function() {
-        const initSheet = document.getElementById('filterSheetType').value;
-        if (initSheet) {
-            updateFilterDropdowns(initSheet);
-        }
-    })();
+    // IIFE auto-trigger DIHAPUS — PHP render sudah handle initial state
 </script>

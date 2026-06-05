@@ -373,4 +373,28 @@ class M_absensi extends CI_Model
         $this->db->order_by('tanggal', 'ASC');
         return $this->db->get()->result();
     }
+
+    // --- FUNGSI UNTUK CHATBOT WA ---
+    public function cari_pengguna_dan_cek_absen($nama_dicari)
+    {
+        $hari_ini = date('Y-m-d');
+
+        // 1. Cari user di tabel pengguna berdasarkan nama (pencarian mirip / LIKE)
+        $this->db->like('nama', $nama_dicari);
+        $pengguna = $this->db->get('pengguna')->row();
+
+        if (!$pengguna) {
+            return "Maaf, nama '" . ucwords($nama_dicari) . "' tidak ditemukan di sistem.";
+        }
+
+        // 2. Cek apakah sudah absen masuk hari ini
+        $absen_masuk = $this->get_today_in($pengguna->id);
+
+        if ($absen_masuk) {
+            $jam = date('H:i', strtotime($absen_masuk->waktu));
+            return "✅ *YA*, {$pengguna->nama} (NIK: {$pengguna->nik}) sudah absen masuk hari ini.\n⏰ Jam Absen: {$jam} WIB";
+        } else {
+            return "❌ *BELUM*, {$pengguna->nama} belum melakukan absen masuk hari ini.";
+        }
+    }
 }
