@@ -923,6 +923,17 @@
 
         history.pushState(null, null, location.href);
         window.onpopstate = () => history.go(1);
+        // Enter di field manapun langsung trigger submit
+        ['identifierField', 'passwordField', 'roleField'].forEach(function (id) {
+            document.getElementById(id).addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('loginForm').requestSubmit
+                        ? document.getElementById('loginForm').requestSubmit()
+                        : document.getElementById('loginForm').dispatchEvent(new Event('submit', { cancelable: true }));
+                }
+            });
+        });
     </script>
 </body>
 

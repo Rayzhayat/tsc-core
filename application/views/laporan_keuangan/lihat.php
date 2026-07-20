@@ -235,7 +235,7 @@
 
                     <!-- INFO CARDS -->
                     <div class="row g-3 mb-3">
-                        <div class="col-xl-4 col-md-6">
+                        <div class="col-xl-3 col-md-6">
                             <div class="card info-card success shadow-sm h-100">
                                 <div class="card-body py-3">
                                     <div class="d-flex align-items-center justify-content-between">
@@ -244,14 +244,15 @@
                                                 style="font-size:.72rem;letter-spacing:.5px">Total Pemasukan (Cash In)
                                             </div>
                                             <div class="fs-5 fw-bold nominal-cell">Rp
-                                                <?= number_format($total_in, 0, ',', '.') ?></div>
+                                                <?= number_format($total_in, 0, ',', '.') ?>
+                                            </div>
                                         </div>
                                         <i class="fas fa-arrow-down fa-2x text-success opacity-25"></i>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-xl-4 col-md-6">
+                        <div class="col-xl-3 col-md-6">
                             <div class="card info-card danger shadow-sm h-100">
                                 <div class="card-body py-3">
                                     <div class="d-flex align-items-center justify-content-between">
@@ -260,14 +261,15 @@
                                                 style="font-size:.72rem;letter-spacing:.5px">Total Pengeluaran (Cash
                                                 Out)</div>
                                             <div class="fs-5 fw-bold nominal-cell">Rp
-                                                <?= number_format($total_out, 0, ',', '.') ?></div>
+                                                <?= number_format($total_out, 0, ',', '.') ?>
+                                            </div>
                                         </div>
                                         <i class="fas fa-arrow-up fa-2x text-danger opacity-25"></i>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-xl-4 col-md-6">
+                        <div class="col-xl-3 col-md-6">
                             <div class="card info-card primary shadow-sm h-100">
                                 <div class="card-body py-3">
                                     <div class="d-flex align-items-center justify-content-between">
@@ -289,6 +291,26 @@
                                         <i class="fas fa-balance-scale fa-2x text-primary opacity-25"></i>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div class="card shadow-sm h-100" style="border-left: 4px solid #e74a3b !important;">
+                                <a href="<?= base_url('invoice_tsc#aging') ?>" class="text-decoration-none">
+                                    <div class="card-body py-3">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <div class="text-danger text-uppercase fw-semibold mb-1"
+                                                    style="font-size:.72rem;letter-spacing:.5px">Piutang Overdue</div>
+                                                <div class="fs-6 fw-bold text-danger">
+                                                    Lihat Aging Report <i class="fas fa-arrow-right ms-1"
+                                                        style="font-size:.7rem"></i>
+                                                </div>
+                                                <small class="text-muted">Cek umur piutang di Invoice TSC</small>
+                                            </div>
+                                            <i class="fas fa-hourglass-half fa-2x text-danger opacity-25"></i>
+                                        </div>
+                                    </div>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -432,7 +454,8 @@
                                                             <?php endif ?>
                                                         </td>
                                                         <td class="text-end nominal-cell">Rp
-                                                            <?= number_format($item->saldo_awal, 0, ',', '.') ?></td>
+                                                            <?= number_format($item->saldo_awal, 0, ',', '.') ?>
+                                                        </td>
                                                         <td class="text-end">
                                                             <?= $item->total_masuk > 0
                                                                 ? '<span class="badge-in nominal-cell">Rp ' . number_format($item->total_masuk, 0, ',', '.') . '</span>'
@@ -481,7 +504,8 @@
                                                         <?php endif ?>
                                                     </td>
                                                     <td class="text-end nominal-cell">Rp
-                                                        <?= number_format($subtotal_saldo_awal, 0, ',', '.') ?></td>
+                                                        <?= number_format($subtotal_saldo_awal, 0, ',', '.') ?>
+                                                    </td>
                                                     <td class="text-end nominal-cell">
                                                         <?= $subtotal_masuk > 0 ? 'Rp ' . number_format($subtotal_masuk, 0, ',', '.') : '&mdash;' ?>
                                                     </td>
@@ -552,7 +576,8 @@
                                                             <?php endif ?>
                                                         </td>
                                                         <td class="text-end nominal-cell">Rp
-                                                            <?= number_format($item->saldo_awal, 0, ',', '.') ?></td>
+                                                            <?= number_format($item->saldo_awal, 0, ',', '.') ?>
+                                                        </td>
                                                         <td class="text-end">
                                                             <?= $item->total_masuk > 0
                                                                 ? '<span class="badge-in nominal-cell">Rp ' . number_format($item->total_masuk, 0, ',', '.') . '</span>'
@@ -589,7 +614,8 @@
                                                         <i class="fas fa-calculator me-1"></i>Subtotal OCAS
                                                     </td>
                                                     <td class="text-end nominal-cell">Rp
-                                                        <?= number_format($subtotal_ocas_awal, 0, ',', '.') ?></td>
+                                                        <?= number_format($subtotal_ocas_awal, 0, ',', '.') ?>
+                                                    </td>
                                                     <td class="text-end nominal-cell">
                                                         <?= $subtotal_ocas_masuk > 0 ? 'Rp ' . number_format($subtotal_ocas_masuk, 0, ',', '.') : '&mdash;' ?>
                                                     </td>
@@ -650,13 +676,17 @@
                                                     <i class="fas fa-chart-line me-1"></i>GRAND TOTAL
                                                 </td>
                                                 <td class="text-end nominal-cell">Rp
-                                                    <?= number_format($grand_total_saldo_awal, 0, ',', '.') ?></td>
+                                                    <?= number_format($grand_total_saldo_awal, 0, ',', '.') ?>
+                                                </td>
                                                 <td class="text-end nominal-cell">Rp
-                                                    <?= number_format($grand_total_masuk, 0, ',', '.') ?></td>
+                                                    <?= number_format($grand_total_masuk, 0, ',', '.') ?>
+                                                </td>
                                                 <td class="text-end nominal-cell">Rp
-                                                    <?= number_format($grand_total_keluar, 0, ',', '.') ?></td>
+                                                    <?= number_format($grand_total_keluar, 0, ',', '.') ?>
+                                                </td>
                                                 <td class="text-end nominal-cell">Rp
-                                                    <?= number_format($grand_total_saldo_akhir, 0, ',', '.') ?></td>
+                                                    <?= number_format($grand_total_saldo_akhir, 0, ',', '.') ?>
+                                                </td>
                                                 <td class="text-end nominal-cell">
                                                     <?= $grand_total_mutasi >= 0 ? '+' : '' ?>Rp
                                                     <?= number_format(abs($grand_total_mutasi), 0, ',', '.') ?>

@@ -31,7 +31,14 @@ class Api extends CI_Controller
         if (empty($api_key) || $api_key !== $valid) {
             header('Content-Type: application/json');
             http_response_code(401);
-            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Unauthorized',
+                'received' => $api_key,        // ✅ tambah ini
+                'valid' => $valid,          // ✅ tambah ini
+                'post_raw' => $this->input->post(), // ✅ tambah ini
+                'method' => $_SERVER['REQUEST_METHOD'], // ✅ tambah ini
+            ]);
             exit;
         }
     }
@@ -60,7 +67,7 @@ class Api extends CI_Controller
             ->get('absensi')->row();
 
         if ($prev_in) {
-            $in_dt  = $prev_in->tanggal . ' ' . $prev_in->waktu;
+            $in_dt = $prev_in->tanggal . ' ' . $prev_in->waktu;
             $max_dt = date('Y-m-d H:i:s', strtotime($in_dt) + 86400);
 
             $prev_out = $this->db
@@ -74,15 +81,15 @@ class Api extends CI_Controller
                 ->get('absensi')->row();
 
             if ($prev_out) {
-                $out_dt          = $prev_out->tanggal . ' ' . $prev_out->waktu;
+                $out_dt = $prev_out->tanggal . ' ' . $prev_out->waktu;
                 $hours_since_out = (time() - strtotime($out_dt)) / 3600;
 
                 if ($hours_since_out < 6) {
                     return [
                         'error' => true,
-                        'code'  => 'ALREADY_COMPLETE',
-                        'data'  => [
-                            'in'  => $prev_in->waktu,
+                        'code' => 'ALREADY_COMPLETE',
+                        'data' => [
+                            'in' => $prev_in->waktu,
                             'out' => $prev_out->waktu,
                         ],
                     ];
@@ -122,7 +129,7 @@ class Api extends CI_Controller
             echo json_encode([
                 'success' => false,
                 'message' => 'Kartu tidak terdaftar',
-                'code'    => 'CARD_NOT_FOUND',
+                'code' => 'CARD_NOT_FOUND',
             ]);
             return;
         }
@@ -132,8 +139,8 @@ class Api extends CI_Controller
             echo json_encode([
                 'success' => false,
                 'message' => 'Kartu tidak aktif',
-                'code'    => 'CARD_INACTIVE',
-                'nama'    => $card->nama,
+                'code' => 'CARD_INACTIVE',
+                'nama' => $card->nama,
             ]);
             return;
         }
@@ -147,10 +154,10 @@ class Api extends CI_Controller
             echo json_encode([
                 'success' => false,
                 'message' => 'Absensi sudah lengkap',
-                'code'    => 'ALREADY_COMPLETE',
-                'nama'    => $card->nama,
-                'in'      => $resolved['data']['in']  ?? null,
-                'out'     => $resolved['data']['out'] ?? null,
+                'code' => 'ALREADY_COMPLETE',
+                'nama' => $card->nama,
+                'in' => $resolved['data']['in'] ?? null,
+                'out' => $resolved['data']['out'] ?? null,
             ]);
             return;
         }
@@ -160,15 +167,15 @@ class Api extends CI_Controller
         log_message('error', '[RFID] Tipe resolved: ' . strtoupper($tipe) . ' | ' . $card->nama);
 
         $data = [
-            'user_id'    => $card->user_id,
-            'tanggal'    => date('Y-m-d'),
-            'waktu'      => date('H:i:s'),
-            'foto'       => 'rfid_no_photo.jpg',
-            'latitude'   => '-6.1751',
-            'longitude'  => '106.8650',
-            'alamat'     => 'Kantor TSC - Absensi RFID',
-            'metode'     => 'rfid',
-            'tipe'       => $tipe,
+            'user_id' => $card->user_id,
+            'tanggal' => date('Y-m-d'),
+            'waktu' => date('H:i:s'),
+            'foto' => 'rfid_no_photo.jpg',
+            'latitude' => '-6.2049022',
+            'longitude' => '107.0145396',
+            'alamat' => 'Kantor TSC - Jl. Bulak Perwira 2 No.26 A, Bekasi Utara - Absensi RFID',
+            'metode' => 'rfid',
+            'tipe' => $tipe,
             'created_at' => date('Y-m-d H:i:s'),
         ];
 
@@ -177,11 +184,11 @@ class Api extends CI_Controller
             echo json_encode([
                 'success' => true,
                 'message' => 'Absensi ' . strtoupper($tipe) . ' berhasil',
-                'code'    => 'SUCCESS',
-                'tipe'    => $tipe,
-                'nama'    => $card->nama,
-                'nik'     => $card->nik,
-                'waktu'   => date('H:i:s'),
+                'code' => 'SUCCESS',
+                'tipe' => $tipe,
+                'nama' => $card->nama,
+                'nik' => $card->nik,
+                'waktu' => date('H:i:s'),
                 'tanggal' => date('d/m/Y'),
             ]);
         } else {
@@ -189,7 +196,7 @@ class Api extends CI_Controller
             echo json_encode([
                 'success' => false,
                 'message' => 'Gagal simpan ke database',
-                'code'    => 'DB_ERROR',
+                'code' => 'DB_ERROR',
             ]);
         }
     }
@@ -219,7 +226,7 @@ class Api extends CI_Controller
             echo json_encode([
                 'success' => false,
                 'message' => 'UID sudah terdaftar',
-                'code'    => 'ALREADY_REGISTERED',
+                'code' => 'ALREADY_REGISTERED',
             ]);
             return;
         }
@@ -235,8 +242,8 @@ class Api extends CI_Controller
         echo json_encode([
             'success' => true,
             'message' => 'Kartu masuk antrian pendaftaran',
-            'code'    => 'PENDING_SAVED',
-            'uid'     => $uid,
+            'code' => 'PENDING_SAVED',
+            'uid' => $uid,
         ]);
     }
 }

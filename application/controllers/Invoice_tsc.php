@@ -29,11 +29,33 @@ class Invoice_tsc extends CI_Controller
         $this->load->helper(['terbilang_helper', 'number', 'url', 'form']);
     }
 
-    // ✅ FIXED: Helper method to get current user name
+    /**
+     * Helper: get current user name
+     */
     private function get_current_user()
     {
         $login_data = $this->session->userdata('login');
         return $login_data['nama'] ?? 'admin';
+    }
+
+    /**
+     * Helper: normalise customer_id dari GET input menjadi array bersih.
+     * Berlaku untuk single value maupun array (customer_id[]).
+     *
+     * @return array  — array of string IDs, bisa kosong
+     */
+    private function get_customer_ids_from_get()
+    {
+        $raw = $this->input->get('customer_id');
+
+        if (empty($raw))
+            return [];
+
+        $ids = is_array($raw)
+            ? array_values(array_filter(array_map('trim', $raw)))
+            : [trim($raw)];
+
+        return $ids;
     }
 
     // ==================== LIST ====================
@@ -43,22 +65,19 @@ class Invoice_tsc extends CI_Controller
         $data['title'] = 'Invoice TSC';
         $data['aktif'] = 'invoice_tsc';
 
-        // ✅ NEW: Pagination config
-        $per_page = $this->input->get('per_page') ?: 10;  // Default 10
+        $per_page = $this->input->get('per_page') ?: 10;
         $page = $this->input->get('page') ?: 1;
         $offset = ($page - 1) * $per_page;
 
-        // Get filters
         $data['filters'] = [
-            'customer_id' => $this->input->get('customer_id'),
+            'customer_id' => $this->get_customer_ids_from_get(), // selalu array
             'date_from' => $this->input->get('date_from'),
             'date_to' => $this->input->get('date_to'),
             'periode_shipment' => $this->input->get('periode_shipment'),
             'status' => $this->input->get('status'),
-            'keyword' => $this->input->get('keyword')
+            'keyword' => $this->input->get('keyword'),
         ];
 
-        // Array bulan untuk dropdown
         $data['bulan_options'] = [
             '01 Januari',
             '02 Februari',
@@ -71,30 +90,30 @@ class Invoice_tsc extends CI_Controller
             '09 September',
             '10 Oktober',
             '11 November',
-            '12 Desember'
+            '12 Desember',
         ];
 
-        // ✅ NEW: Get total records (untuk pagination)
         $total_records = $this->M_invoice_tsc->count_all($data['filters']);
 
-        // ✅ NEW: Get paginated data
         $data['invoices'] = $this->M_invoice_tsc->get_all($data['filters'], $per_page, $offset);
         $data['customers'] = $this->M_invoice_tsc->get_all_customers();
         $data['summary'] = $this->M_invoice_tsc->get_summary();
+        $data['count_overdue'] = $this->M_invoice_tsc->count_overdue();
+        $data['aging_summary'] = $this->M_invoice_tsc->get_aging_summary();
+        $data['aging_per_customer'] = $this->M_invoice_tsc->get_aging_per_customer();
+        $data['aging_detail'] = $this->M_invoice_tsc->get_aging_detail();
         $data['user_level'] = $this->session->userdata('login')['user_level'] ?? '';
 
-        // ✅ NEW: Pagination data
         $data['pagination'] = [
             'total_records' => $total_records,
             'per_page' => $per_page,
             'current_page' => $page,
             'total_pages' => ceil($total_records / $per_page),
-            'offset' => $offset
+            'offset' => $offset,
         ];
 
         $this->load->view('invoice_tsc/lihat', $data);
     }
-
 
     // ==================== DETAIL ====================
 
@@ -103,7 +122,6 @@ class Invoice_tsc extends CI_Controller
         $data['title'] = 'Detail Invoice TSC';
         $data['aktif'] = 'invoice_tsc';
 
-        // Get invoice with items
         $data['invoice'] = $this->M_invoice_tsc->get_invoice_with_items($id);
 
         if (!$data['invoice']) {
@@ -111,10 +129,7 @@ class Invoice_tsc extends CI_Controller
             redirect('invoice_tsc');
         }
 
-        // Get piutang data
         $data['piutang'] = $this->M_invoice_tsc->get_piutang($id);
-
-        // Get user level for permission checking
         $data['user_level'] = $this->session->userdata('login')['user_level'] ?? '';
 
         $this->load->view('invoice_tsc/detail', $data);
@@ -128,15 +143,9 @@ class Invoice_tsc extends CI_Controller
         $customer = $this->M_invoice_tsc->get_customer_data($customer_id);
 
         if ($customer) {
-            echo json_encode([
-                'success' => true,
-                'data' => $customer
-            ]);
+            echo json_encode(['success' => true, 'data' => $customer]);
         } else {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Customer tidak ditemukan'
-            ]);
+            echo json_encode(['success' => false, 'message' => 'Customer tidak ditemukan']);
         }
     }
 
@@ -150,28 +159,21 @@ class Invoice_tsc extends CI_Controller
         $subtotal_items = 0;
         $total_deductions = 0;
 
-        // Sum items only
         if ($items) {
             foreach ($items as $item) {
                 $subtotal_items += floatval($item);
             }
         }
 
-        // Sum deductions
         if ($deductions) {
             foreach ($deductions as $deduction) {
                 $total_deductions += floatval($deduction);
             }
         }
 
-        // Calculate from ITEMS ONLY (deduction does NOT affect PPN/PPH)
         $ppn_amount = $subtotal_items * ($ppn_percent / 100);
         $pph_amount = $subtotal_items * ($pph_percent / 100);
-
-        // Subtotal after deduction (for display)
         $subtotal_after_deduction = $subtotal_items - $total_deductions;
-
-        // Grand total
         $grand_total = $subtotal_after_deduction + $ppn_amount - $pph_amount;
 
         $this->load->helper('terbilang_helper');
@@ -191,6 +193,7 @@ class Invoice_tsc extends CI_Controller
     public function update_status($id)
     {
         $status = $this->input->post('status');
+        $invoice = $this->M_invoice_tsc->get_by_id($id);   // ← tambahin baris ini
 
         if ($status == 'paid') {
             $result = $this->M_invoice_tsc->mark_as_paid($id);
@@ -199,6 +202,12 @@ class Invoice_tsc extends CI_Controller
         }
 
         if ($result) {
+            log_activity(
+                'invoice_tsc',
+                'update',
+                $id,
+                'Ubah status invoice ' . ($invoice->no_invoice ?? $id) . ' ke ' . strtoupper($status)
+            );
             $this->session->set_flashdata('success', 'Status invoice berhasil diupdate!');
         } else {
             $this->session->set_flashdata('error', 'Gagal update status invoice!');
@@ -214,10 +223,7 @@ class Invoice_tsc extends CI_Controller
         $data['title'] = 'Buat Invoice TSC';
         $data['aktif'] = 'invoice_tsc';
         $data['customers'] = $this->M_invoice_tsc->get_all_customers();
-
-        // Get revenue accounts
         $data['revenue_accounts'] = $this->M_invoice_tsc->get_revenue_accounts();
-
         $data['bulan_options'] = [
             '01 Januari',
             '02 Februari',
@@ -230,7 +236,7 @@ class Invoice_tsc extends CI_Controller
             '09 September',
             '10 Oktober',
             '11 November',
-            '12 Desember'
+            '12 Desember',
         ];
 
         $this->load->view('invoice_tsc/tambah', $data);
@@ -238,7 +244,6 @@ class Invoice_tsc extends CI_Controller
 
     public function proses_tambah()
     {
-        // Validation
         $this->form_validation->set_rules('no_invoice', 'No. Invoice', 'required');
         $this->form_validation->set_rules('customer_id', 'Customer', 'required');
         $this->form_validation->set_rules('invoice_date', 'Tanggal Invoice', 'required');
@@ -250,7 +255,6 @@ class Invoice_tsc extends CI_Controller
             redirect('invoice_tsc/tambah');
         }
 
-        // Get input
         $no_invoice = $this->input->post('no_invoice');
         $customer_id = $this->input->post('customer_id');
         $invoice_date = $this->input->post('invoice_date');
@@ -259,15 +263,13 @@ class Invoice_tsc extends CI_Controller
         $keterangan = $this->input->post('keterangan');
         $periode_shipment = $this->input->post('periode_shipment');
         $revenue_account_id = $this->input->post('revenue_account_id');
-        $no_po = $this->input->post('no_po'); // ✅ TAMBAH
+        $no_po = $this->input->post('no_po');
 
-        // Check duplicate (warning only)
         $duplicate = $this->M_invoice_tsc->check_duplicate_invoice($no_invoice);
         if ($duplicate) {
             $this->session->set_flashdata('warning', 'Warning: No. Invoice sudah pernah digunakan!');
         }
 
-        // Get customer data
         $customer = $this->M_invoice_tsc->get_customer_data($customer_id);
         if (!$customer) {
             $this->session->set_flashdata('error', 'Customer tidak ditemukan!');
@@ -277,7 +279,6 @@ class Invoice_tsc extends CI_Controller
         // Process items
         $items = [];
         $subtotal_items = 0;
-
         $items_desc = $this->input->post('item_deskripsi');
         $items_amount = $this->input->post('item_jumlah');
 
@@ -285,11 +286,7 @@ class Invoice_tsc extends CI_Controller
             foreach ($items_desc as $index => $desc) {
                 if (!empty($desc) && !empty($items_amount[$index])) {
                     $amount = floatval(str_replace([',', '.'], ['', '.'], $items_amount[$index]));
-                    $items[] = [
-                        'item_type' => 'item',
-                        'deskripsi' => trim($desc),
-                        'jumlah' => $amount
-                    ];
+                    $items[] = ['item_type' => 'item', 'deskripsi' => trim($desc), 'jumlah' => $amount];
                     $subtotal_items += $amount;
                 }
             }
@@ -304,33 +301,22 @@ class Invoice_tsc extends CI_Controller
             foreach ($deductions_desc as $index => $desc) {
                 if (!empty($desc) && !empty($deductions_amount[$index])) {
                     $amount = floatval(str_replace([',', '.'], ['', '.'], $deductions_amount[$index]));
-                    $items[] = [
-                        'item_type' => 'deduction',
-                        'deskripsi' => trim($desc),
-                        'jumlah' => -abs($amount)
-                    ];
+                    $items[] = ['item_type' => 'deduction', 'deskripsi' => trim($desc), 'jumlah' => -abs($amount)];
                     $total_deductions += abs($amount);
                 }
             }
         }
 
-        // Calculate
         $subtotal_after_deduction = $subtotal_items - $total_deductions;
-
         $ppn_percent = floatval($customer->ppn ?? 0);
         $pph_percent = floatval($customer->pph ?? 0);
-
-        // 🔥 FIX: PPN & PPH dari SUBTOTAL_ITEMS (sebelum potongan!)
-        // PPN & PPH dari SUBTOTAL SETELAH POTONGAN
         $ppn_amount = $subtotal_after_deduction * ($ppn_percent / 100);
         $pph_amount = $subtotal_after_deduction * ($pph_percent / 100);
-
         $grand_total = $subtotal_after_deduction + $ppn_amount - $pph_amount;
-        // Generate terbilang
+
         $this->load->helper('terbilang_helper');
         $terbilang = terbilang($grand_total) . ' Rupiah';
 
-        // Prepare invoice data
         $invoice_data = [
             'no_invoice' => $no_invoice,
             'customer_id' => $customer_id,
@@ -343,7 +329,7 @@ class Invoice_tsc extends CI_Controller
             'invoice_date' => $invoice_date,
             'due_date' => $due_date,
             'no_faktur' => $no_faktur,
-            'no_po' => $no_po, // ✅ TAMBAH: No. PO
+            'no_po' => $no_po,
             'periode_shipment' => $periode_shipment,
             'subtotal' => $subtotal_after_deduction,
             'ppn_percent' => $ppn_percent,
@@ -356,54 +342,51 @@ class Invoice_tsc extends CI_Controller
             'revenue_account_id' => $revenue_account_id,
             'status' => 'draft',
             'created_by' => $this->get_current_user(),
-            'created_at' => date('Y-m-d H:i:s')
+            'created_at' => date('Y-m-d H:i:s'),
         ];
 
-        // Create invoice
         $invoice_id = $this->M_invoice_tsc->create_invoice($invoice_data, $items);
 
         if ($invoice_id) {
-            // Check action
+            log_activity(
+                'invoice_tsc',
+                'create',
+                $invoice_id,
+                'Buat invoice ' . $no_invoice . ' untuk ' . $customer->nama . ' - Rp ' . number_format($grand_total, 0, ',', '.')
+            );
+
             $action = $this->input->post('action');
 
             if ($action == 'save_and_export') {
-                // 🔥 NEW: Generate PDF ke temporary folder
                 $pdf_path = $this->generate_pdf_file($invoice_id);
 
                 if ($pdf_path) {
-                    // Set session untuk trigger download di list page
                     $this->session->set_flashdata('success', 'Invoice berhasil dibuat!');
                     $this->session->set_flashdata('download_pdf', $pdf_path);
                     $this->session->set_flashdata('invoice_no', $no_invoice);
                 } else {
                     $this->session->set_flashdata('warning', 'Invoice berhasil dibuat, tapi gagal generate PDF!');
                 }
-
-                redirect('invoice_tsc');
             } else {
-                // Normal save
                 $this->session->set_flashdata('success', 'Invoice berhasil dibuat!');
-                redirect('invoice_tsc');
             }
+
+            redirect('invoice_tsc');
         } else {
             $this->session->set_flashdata('error', 'Gagal membuat invoice!');
             redirect('invoice_tsc/tambah');
         }
     }
 
-    // 🔥 NEW: Generate PDF to temp file and return path
     private function generate_pdf_file($invoice_id)
     {
         try {
             $invoice = $this->M_invoice_tsc->get_invoice_with_items($invoice_id);
-
-            if (!$invoice) {
+            if (!$invoice)
                 return false;
-            }
 
             $data['invoice'] = $invoice;
 
-            // Load Dompdf
             require_once FCPATH . 'vendor/autoload.php';
 
             $options = new \Dompdf\Options();
@@ -411,29 +394,19 @@ class Invoice_tsc extends CI_Controller
             $options->set('chroot', FCPATH);
 
             $dompdf = new \Dompdf\Dompdf($options);
-
-            // Generate HTML
             $html = $this->load->view('invoice_tsc/report_pdf', $data, true);
 
-            // Load HTML
             $dompdf->loadHtml($html);
-
-            // Setup paper
             $dompdf->setPaper('A4', 'portrait');
-
-            // Render PDF
             $dompdf->render();
 
-            // Save to temp folder
             $temp_dir = FCPATH . 'assets/temp/';
-            if (!is_dir($temp_dir)) {
+            if (!is_dir($temp_dir))
                 mkdir($temp_dir, 0755, true);
-            }
 
             $filename = 'Invoice_' . str_replace('/', '-', $invoice->no_invoice) . '_' . time() . '.pdf';
             $filepath = $temp_dir . $filename;
 
-            // Save PDF
             file_put_contents($filepath, $dompdf->output());
 
             return base_url('assets/temp/' . $filename);
@@ -476,7 +449,7 @@ class Invoice_tsc extends CI_Controller
             '09 September',
             '10 Oktober',
             '11 November',
-            '12 Desember'
+            '12 Desember',
         ];
 
         $this->load->view('invoice_tsc/ubah', $data);
@@ -484,7 +457,6 @@ class Invoice_tsc extends CI_Controller
 
     public function proses_ubah($id)
     {
-        // Validation
         $this->form_validation->set_rules('no_invoice', 'No. Invoice', 'required');
         $this->form_validation->set_rules('customer_id', 'Customer', 'required');
         $this->form_validation->set_rules('invoice_date', 'Tanggal Invoice', 'required');
@@ -496,7 +468,6 @@ class Invoice_tsc extends CI_Controller
             redirect('invoice_tsc/ubah/' . $id);
         }
 
-        // Get input
         $no_invoice = $this->input->post('no_invoice');
         $customer_id = $this->input->post('customer_id');
         $invoice_date = $this->input->post('invoice_date');
@@ -505,15 +476,13 @@ class Invoice_tsc extends CI_Controller
         $keterangan = $this->input->post('keterangan');
         $periode_shipment = $this->input->post('periode_shipment');
         $revenue_account_id = $this->input->post('revenue_account_id');
-        $no_po = $this->input->post('no_po'); // ✅ TAMBAH
+        $no_po = $this->input->post('no_po');
 
-        // Check duplicate (exclude current)
         $duplicate = $this->M_invoice_tsc->check_duplicate_invoice($no_invoice, $id);
         if ($duplicate) {
             $this->session->set_flashdata('warning', 'Warning: No. Invoice sudah pernah digunakan!');
         }
 
-        // Get customer data
         $customer = $this->M_invoice_tsc->get_customer_data($customer_id);
         if (!$customer) {
             $this->session->set_flashdata('error', 'Customer tidak ditemukan!');
@@ -523,7 +492,6 @@ class Invoice_tsc extends CI_Controller
         // Process items
         $items = [];
         $subtotal_items = 0;
-
         $items_desc = $this->input->post('item_deskripsi');
         $items_amount = $this->input->post('item_jumlah');
 
@@ -531,11 +499,7 @@ class Invoice_tsc extends CI_Controller
             foreach ($items_desc as $index => $desc) {
                 if (!empty($desc) && !empty($items_amount[$index])) {
                     $amount = floatval(str_replace([',', '.'], ['', '.'], $items_amount[$index]));
-                    $items[] = [
-                        'item_type' => 'item',
-                        'deskripsi' => trim($desc),
-                        'jumlah' => $amount
-                    ];
+                    $items[] = ['item_type' => 'item', 'deskripsi' => trim($desc), 'jumlah' => $amount];
                     $subtotal_items += $amount;
                 }
             }
@@ -550,32 +514,22 @@ class Invoice_tsc extends CI_Controller
             foreach ($deductions_desc as $index => $desc) {
                 if (!empty($desc) && !empty($deductions_amount[$index])) {
                     $amount = floatval(str_replace([',', '.'], ['', '.'], $deductions_amount[$index]));
-                    $items[] = [
-                        'item_type' => 'deduction',
-                        'deskripsi' => trim($desc),
-                        'jumlah' => -abs($amount)
-                    ];
+                    $items[] = ['item_type' => 'deduction', 'deskripsi' => trim($desc), 'jumlah' => -abs($amount)];
                     $total_deductions += abs($amount);
                 }
             }
         }
 
-        // Calculate
         $subtotal_after_deduction = $subtotal_items - $total_deductions;
-
         $ppn_percent = floatval($customer->ppn ?? 0);
         $pph_percent = floatval($customer->pph ?? 0);
-
-        // PPN & PPH dari SUBTOTAL SETELAH POTONGAN
         $ppn_amount = $subtotal_after_deduction * ($ppn_percent / 100);
         $pph_amount = $subtotal_after_deduction * ($pph_percent / 100);
-
         $grand_total = $subtotal_after_deduction + $ppn_amount - $pph_amount;
 
         $this->load->helper('terbilang_helper');
         $terbilang = terbilang($grand_total) . ' Rupiah';
 
-        // Prepare data
         $invoice_data = [
             'no_invoice' => $no_invoice,
             'customer_id' => $customer_id,
@@ -588,7 +542,7 @@ class Invoice_tsc extends CI_Controller
             'invoice_date' => $invoice_date,
             'due_date' => $due_date,
             'no_faktur' => $no_faktur,
-            'no_po' => $no_po, // ✅ TAMBAH: No. PO
+            'no_po' => $no_po,
             'periode_shipment' => $periode_shipment,
             'subtotal' => $subtotal_after_deduction,
             'ppn_percent' => $ppn_percent,
@@ -599,13 +553,18 @@ class Invoice_tsc extends CI_Controller
             'terbilang' => $terbilang,
             'keterangan' => $keterangan,
             'revenue_account_id' => $revenue_account_id,
-            'updated_at' => date('Y-m-d H:i:s')
+            'updated_at' => date('Y-m-d H:i:s'),
         ];
 
-        // Update invoice
         $result = $this->M_invoice_tsc->update_invoice($id, $invoice_data, $items);
 
         if ($result) {
+            log_activity(
+                'invoice_tsc',
+                'update',
+                $id,
+                'Edit invoice ' . $no_invoice . ' (' . $customer->nama . ') - Rp ' . number_format($grand_total, 0, ',', '.')
+            );
             $this->session->set_flashdata('success', 'Invoice berhasil diupdate!');
             redirect('invoice_tsc');
         } else {
@@ -620,7 +579,6 @@ class Invoice_tsc extends CI_Controller
     {
         $user_level = $this->session->userdata('login')['user_level'] ?? '';
 
-        // Superadmin only
         if ($user_level != 'superadmin') {
             $this->session->set_flashdata('error', 'Hanya Superadmin yang bisa mengedit invoice PAID!');
             redirect('invoice_tsc');
@@ -654,7 +612,7 @@ class Invoice_tsc extends CI_Controller
             '09 September',
             '10 Oktober',
             '11 November',
-            '12 Desember'
+            '12 Desember',
         ];
 
         $this->load->view('invoice_tsc/ubah_paid', $data);
@@ -676,7 +634,6 @@ class Invoice_tsc extends CI_Controller
             redirect('invoice_tsc');
         }
 
-        // Validation
         $this->form_validation->set_rules('no_invoice', 'No. Invoice', 'required');
         $this->form_validation->set_rules('customer_id', 'Customer', 'required');
         $this->form_validation->set_rules('invoice_date', 'Tanggal Invoice', 'required');
@@ -702,7 +659,6 @@ class Invoice_tsc extends CI_Controller
             redirect('invoice_tsc/ubah_paid/' . $id);
         }
 
-        // ✅ HANYA update field non-finansial, status & jurnal TIDAK DIUBAH
         $update_data = [
             'no_invoice' => $no_invoice,
             'customer_id' => $customer_id,
@@ -718,14 +674,20 @@ class Invoice_tsc extends CI_Controller
             'no_po' => $no_po,
             'periode_shipment' => $periode_shipment,
             'keterangan' => $keterangan,
-            // ✅ status, grand_total, ppn, pph, subtotal TIDAK disentuh
-            'updated_at' => date('Y-m-d H:i:s')
+            'updated_at' => date('Y-m-d H:i:s'),
         ];
 
         $result = $this->M_invoice_tsc->update_paid_invoice($id, $update_data);
 
         if ($result) {
             log_message('error', '[SUPERADMIN] Edited PAID invoice: ' . $no_invoice . ' (ID: ' . $id . ')');
+            log_activity(
+                'invoice_tsc',
+                'update',
+                $id,
+                '[SUPERADMIN] Edit invoice PAID ' . $invoice->no_invoice . ' (data saja, jurnal tidak berubah)',
+                (array) $invoice
+            );
             $this->session->set_flashdata('success', 'Invoice PAID berhasil diupdate (data saja, jurnal tidak berubah)!');
             redirect('invoice_tsc');
         } else {
@@ -734,12 +696,40 @@ class Invoice_tsc extends CI_Controller
         }
     }
 
+    // ==================== EXPORT AGING ====================
+
+    public function export_aging()
+    {
+        $rows = $this->M_invoice_tsc->get_aging_detail();
+        $filename = 'TSC_Aging_Report_' . date('Ymd') . '.csv';
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        $out = fopen('php://output', 'w');
+        fputs($out, "\xEF\xBB\xBF");
+        fputcsv($out, ['Customer', 'No. Invoice', 'Jatuh Tempo', 'Overdue (hari)', 'Bucket', 'Outstanding']);
+
+        foreach ($rows as $r) {
+            fputcsv($out, [
+                $r->customer_nama ?? $r->customer_id,
+                $r->no_invoice ?? '—',
+                $r->due_date,
+                $r->overdue_days,
+                $r->aging_bucket,
+                $r->outstanding,
+            ]);
+        }
+
+        fclose($out);
+        exit;
+    }
+
     // ==================== DELETE ====================
 
     public function hapus($id)
     {
         $user_level = $this->session->userdata('login')['user_level'] ?? '';
-
         $invoice = $this->M_invoice_tsc->get_by_id($id);
 
         if (!$invoice) {
@@ -758,7 +748,13 @@ class Invoice_tsc extends CI_Controller
             if ($invoice->status == 'paid' && $user_level == 'superadmin') {
                 log_message('error', '[SUPERADMIN] Deleted PAID invoice: ' . $invoice->no_invoice . ' (ID: ' . $id . ')');
             }
-
+            log_activity(
+                'invoice_tsc',
+                'delete',
+                $id,
+                'Hapus invoice ' . $invoice->no_invoice . ' (' . $invoice->customer_nama . ') - Rp ' . number_format($invoice->grand_total, 0, ',', '.') . ($invoice->status == 'paid' ? ' [STATUS PAID]' : ''),
+                (array) $invoice
+            );
             $this->session->set_flashdata('success', 'Invoice berhasil dihapus!');
         } else {
             $this->session->set_flashdata('error', 'Gagal menghapus invoice!');
@@ -780,49 +776,41 @@ class Invoice_tsc extends CI_Controller
 
         $data['invoice'] = $invoice;
 
-        // Load Dompdf via Composer
         require_once FCPATH . 'vendor/autoload.php';
 
-        // Create Dompdf instance with options
         $options = new \Dompdf\Options();
         $options->set('isRemoteEnabled', true);
         $options->set('chroot', FCPATH);
 
         $dompdf = new \Dompdf\Dompdf($options);
-
-        // Generate HTML
         $html = $this->load->view('invoice_tsc/report_pdf', $data, true);
 
-        // Load HTML
         $dompdf->loadHtml($html);
-
-        // Setup paper - PORTRAIT
         $dompdf->setPaper('A4', 'portrait');
-
-        // Render PDF
         $dompdf->render();
 
-        // Output
         $filename = 'Invoice_' . str_replace('/', '-', $invoice->no_invoice) . '.pdf';
-        $dompdf->stream($filename, ["Attachment" => true]);
+        $dompdf->stream($filename, ['Attachment' => true]);
     }
 
     // ==================== EXPORT EXCEL ====================
 
     public function export_excel()
     {
+        // ── Normalise customer filter (support array) ──
+        $customer_ids = $this->get_customer_ids_from_get();
+
         $filters = [
-            'customer_id' => $this->input->get('customer_id'),
+            'customer_id' => $customer_ids,
             'date_from' => $this->input->get('date_from'),
             'date_to' => $this->input->get('date_to'),
             'periode_shipment' => $this->input->get('periode_shipment'),
             'status' => $this->input->get('status'),
-            'keyword' => $this->input->get('keyword')
+            'keyword' => $this->input->get('keyword'),
         ];
 
         $invoices = $this->M_invoice_tsc->get_all($filters);
 
-        // Load PhpSpreadsheet
         require_once APPPATH . 'third_party/PhpSpreadsheet/autoload.php';
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
@@ -830,22 +818,20 @@ class Invoice_tsc extends CI_Controller
 
         // Title
         $sheet->setCellValue('A1', 'LAPORAN INVOICE TSC');
-        $sheet->mergeCells('A1:O1'); // ✅ UPDATE: A1:O1 (dulu N1, sekarang O1)
+        $sheet->mergeCells('A1:O1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
 
-        // Period Info
+        // Period info rows
         $row = 2;
         $period_info = [];
 
         if (!empty($filters['date_from']) || !empty($filters['date_to'])) {
             $period = 'Periode Invoice: ';
-            if (!empty($filters['date_from'])) {
+            if (!empty($filters['date_from']))
                 $period .= date('d/m/Y', strtotime($filters['date_from']));
-            }
-            if (!empty($filters['date_to'])) {
+            if (!empty($filters['date_to']))
                 $period .= ' s/d ' . date('d/m/Y', strtotime($filters['date_to']));
-            }
             $period_info[] = $period;
         }
 
@@ -853,10 +839,16 @@ class Invoice_tsc extends CI_Controller
             $period_info[] = 'Periode Shipment: ' . $filters['periode_shipment'];
         }
 
+        // ── Multi customer label di header Excel ──
         if (!empty($filters['customer_id'])) {
-            $customer = $this->M_invoice_tsc->get_customer_data($filters['customer_id']);
-            if ($customer) {
-                $period_info[] = 'Customer: ' . $customer->nama;
+            $names = [];
+            foreach ($filters['customer_id'] as $cid) {
+                $cust = $this->M_invoice_tsc->get_customer_data($cid);
+                if ($cust)
+                    $names[] = $cust->nama;
+            }
+            if (!empty($names)) {
+                $period_info[] = 'Customer: ' . implode(', ', $names);
             }
         }
 
@@ -864,20 +856,20 @@ class Invoice_tsc extends CI_Controller
             $period_info[] = 'Status: ' . strtoupper($filters['status']);
         }
 
-        // Display period info
         if (!empty($period_info)) {
             foreach ($period_info as $info) {
                 $sheet->setCellValue('A' . $row, $info);
-                $sheet->mergeCells('A' . $row . ':O' . $row); // ✅ UPDATE: O (dulu N)
-                $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                $sheet->mergeCells('A' . $row . ':O' . $row);
+                $sheet->getStyle('A' . $row)->getAlignment()
+                    ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
                 $row++;
             }
-            $row++; // Empty row
+            $row++;
         } else {
             $row = 3;
         }
 
-        // ✅ UPDATED: Headers dengan No. PO
+        // Headers
         $headers = [
             'No',
             'No. Invoice',
@@ -886,7 +878,7 @@ class Invoice_tsc extends CI_Controller
             'Periode Shipment',
             'Customer',
             'No. Faktur',
-            'No. PO',              // ✅ TAMBAH KOLOM BARU
+            'No. PO',
             'Akun Pendapatan',
             'Subtotal',
             'PPN',
@@ -902,7 +894,6 @@ class Invoice_tsc extends CI_Controller
             $col++;
         }
 
-        // ✅ UPDATED: Header styling sampai kolom O
         $sheet->getStyle('A' . $row . ':O' . $row)->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => [
@@ -911,18 +902,18 @@ class Invoice_tsc extends CI_Controller
             ],
             'alignment' => [
                 'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
-                'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER
+                'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
             ]
         ]);
 
-        // Get revenue accounts
+        // Revenue accounts map
         $revenue_accounts = $this->M_invoice_tsc->get_revenue_accounts();
         $revenue_map = [];
         foreach ($revenue_accounts as $acc) {
             $revenue_map[$acc->id] = '(' . $acc->kode_perkiraan . ') ' . $acc->nama;
         }
 
-        // Data
+        // Data rows
         $row++;
         $no = 1;
         $total_subtotal = 0;
@@ -931,14 +922,10 @@ class Invoice_tsc extends CI_Controller
         $total_grand = 0;
 
         foreach ($invoices as $inv) {
-            $revenue_name = '-';
-            if (!empty($inv->revenue_account_id) && isset($revenue_map[$inv->revenue_account_id])) {
-                $revenue_name = $revenue_map[$inv->revenue_account_id];
-            } else {
-                $revenue_name = '(20) Pendapatan';
-            }
+            $revenue_name = (!empty($inv->revenue_account_id) && isset($revenue_map[$inv->revenue_account_id]))
+                ? $revenue_map[$inv->revenue_account_id]
+                : '(20) Pendapatan';
 
-            // ✅ UPDATED: Data dengan kolom No. PO
             $sheet->setCellValueExplicit('A' . $row, $no++, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
             $sheet->setCellValueExplicit('B' . $row, $inv->no_invoice, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
             $sheet->setCellValueExplicit('C' . $row, date('d/m/Y', strtotime($inv->invoice_date)), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
@@ -946,11 +933,7 @@ class Invoice_tsc extends CI_Controller
             $sheet->setCellValueExplicit('E' . $row, $inv->periode_shipment ?? '-', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
             $sheet->setCellValueExplicit('F' . $row, $inv->customer_nama, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
             $sheet->setCellValueExplicit('G' . $row, $inv->no_faktur ?? '-', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-
-            // ✅ TAMBAH: Kolom No. PO (kolom H)
             $sheet->setCellValueExplicit('H' . $row, $inv->no_po ?? '-', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-
-            // ✅ UPDATE: Kolom berikutnya shift 1 huruf (I, J, K, L, M, N, O)
             $sheet->setCellValueExplicit('I' . $row, $revenue_name, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
             $sheet->setCellValueExplicit('J' . $row, 'Rp ' . number_format($inv->subtotal, 0, ',', '.'), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
             $sheet->setCellValueExplicit('K' . $row, 'Rp ' . number_format($inv->ppn_amount, 0, ',', '.'), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
@@ -967,15 +950,14 @@ class Invoice_tsc extends CI_Controller
             $row++;
         }
 
-        // ✅ UPDATED: Total row dengan merge sampai kolom I (dulu H)
+        // Total row
         $sheet->setCellValue('A' . $row, 'TOTAL');
-        $sheet->mergeCells('A' . $row . ':I' . $row); // ✅ UPDATE: Merge sampai I (dulu H)
+        $sheet->mergeCells('A' . $row . ':I' . $row);
         $sheet->setCellValueExplicit('J' . $row, 'Rp ' . number_format($total_subtotal, 0, ',', '.'), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
         $sheet->setCellValueExplicit('K' . $row, 'Rp ' . number_format($total_ppn, 0, ',', '.'), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
         $sheet->setCellValueExplicit('L' . $row, 'Rp ' . number_format($total_pph, 0, ',', '.'), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
         $sheet->setCellValueExplicit('M' . $row, 'Rp ' . number_format($total_grand, 0, ',', '.'), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
 
-        // ✅ UPDATED: Style total row sampai O (dulu N)
         $sheet->getStyle('A' . $row . ':O' . $row)->applyFromArray([
             'font' => ['bold' => true],
             'fill' => [
@@ -986,18 +968,15 @@ class Invoice_tsc extends CI_Controller
 
         $lastRow = $row;
 
-        // ✅ UPDATED: Auto-size columns sampai O (dulu N)
         foreach (range('A', 'O') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        // Alignment
         $sheet->getStyle('A4:A' . $lastRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('C4:E' . $lastRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('N4:N' . $lastRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('J4:M' . $lastRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
 
-        // Output
         $filename = 'Invoice_TSC_' . date('YmdHis') . '.xlsx';
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -1009,26 +988,58 @@ class Invoice_tsc extends CI_Controller
         exit;
     }
 
+    // ==================== BULK UPDATE STATUS ====================
+
+    public function bulk_update_status()
+    {
+        $ids = $this->input->post('ids');
+        $status = $this->input->post('status');
+
+        $allowed_status = ['draft', 'sent', 'unsent', 'paid', 'cancelled'];
+
+        if (empty($ids) || !in_array($status, $allowed_status)) {
+            echo json_encode(['success' => false, 'message' => 'Parameter tidak valid']);
+            return;
+        }
+
+        if ($status === 'paid') {
+            $success = 0;
+            foreach ($ids as $id) {
+                if ($this->M_invoice_tsc->mark_as_paid($id))
+                    $success++;
+            }
+            echo json_encode(['success' => true, 'updated' => $success]);
+            return;
+        }
+
+        if ($status === 'cancelled') {
+            $success = 0;
+            foreach ($ids as $id) {
+                if ($this->M_invoice_tsc->cancel_invoice($id))
+                    $success++;
+            }
+            echo json_encode(['success' => true, 'updated' => $success]);
+            return;
+        }
+
+        $result = $this->M_invoice_tsc->bulk_update_status($ids, $status);
+        echo json_encode(['success' => $result !== false, 'updated' => $result]);
+    }
+
     // ==================== AJAX CHECK DUPLICATE ====================
 
-    /**
-     * ✅ NEW: Check if invoice number already exists (AJAX)
-     * Used for real-time duplicate detection while typing
-     */
     public function check_duplicate()
     {
         $no_invoice = $this->input->post('no_invoice');
-        $exclude_id = $this->input->post('exclude_id'); // For edit page
+        $exclude_id = $this->input->post('exclude_id');
 
         if (empty($no_invoice)) {
             echo json_encode(['exists' => false]);
             return;
         }
 
-        // Check database
         $this->db->where('no_invoice', $no_invoice);
 
-        // Exclude current invoice if editing
         if ($exclude_id) {
             $this->db->where('id !=', $exclude_id);
         }

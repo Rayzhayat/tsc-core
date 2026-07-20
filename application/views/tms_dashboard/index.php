@@ -45,6 +45,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 16px;
         }
 
         .tv-header .brand {
@@ -99,6 +100,78 @@
                 opacity: 0.4;
                 transform: scale(0.8);
             }
+        }
+
+        /* ===== PERIOD FILTER ===== */
+        .period-filter {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .period-btn {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .period-btn:hover {
+            background: rgba(78, 115, 223, 0.2);
+            color: #e6edf3;
+            border-color: #4e73df;
+        }
+
+        .period-btn.active {
+            background: #4e73df;
+            color: #fff;
+            border-color: #4e73df;
+            font-weight: 600;
+        }
+
+        .period-label-badge {
+            font-size: 11px;
+            color: #f6c23e;
+            font-weight: 600;
+            white-space: nowrap;
+            text-align: center;
+        }
+
+        .custom-date-wrap {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            justify-content: center;
+        }
+
+        .custom-date-wrap.show {
+            display: flex;
+        }
+
+        .custom-date-wrap input[type="date"] {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+        }
+
+        .custom-date-wrap button {
+            background: #1cc88a;
+            border: none;
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
         }
 
         /* ===== STAT CARDS ===== */
@@ -507,7 +580,6 @@
             padding: 10px 20px 0;
         }
 
-        /* Horizontal scroll wrapper untuk overdue */
         .overdue-scroll-track {
             overflow: hidden;
             padding: 10px 10px 8px;
@@ -518,14 +590,12 @@
             display: flex;
             flex-direction: row;
             gap: 8px;
-            /* lebar akan disesuaikan JS */
             transition: transform 0.05s linear;
             will-change: transform;
         }
 
         .overdue-grid .shipment-row {
             flex: 0 0 270px;
-            /* lebar tetap tiap card */
             min-width: 270px;
             max-width: 270px;
             margin-bottom: 0;
@@ -619,7 +689,9 @@
     $sla_ontime = (int) ($sla->ontime ?? 0);
     $sla_late = (int) ($sla->late ?? 0);
     $sla_pct = $sla_total > 0 ? round(($sla_ontime / $sla_total) * 100, 1) : null;
-    $avg_transit = isset($sla->avg_transit_minutes) && $sla->avg_transit_minutes !== null ? round($sla->avg_transit_minutes / 60, 1) : null;
+    $avg_transit = isset($sla->avg_transit_minutes) && $sla->avg_transit_minutes !== null
+        ? round($sla->avg_transit_minutes / 60, 1) : null;
+
     $overdue_list = $overdue ?? [];
     $overdue_count = count($overdue_list);
     $overdue_standby_list = $overdue_standby ?? [];
@@ -637,6 +709,12 @@
     }
     $sc = sla_color($sla_pct);
     $s = $stats;
+
+    // periode vars (fallback aman)
+    $periode = $periode ?? 'this_month';
+    $periode_label = $periode_label ?? 'Bulan Ini';
+    $custom_from = $custom_from ?? '';
+    $custom_to = $custom_to ?? '';
     ?>
 
     <!-- HEADER -->
@@ -647,13 +725,51 @@
                 <i class="fas fa-map-marker-alt"></i> Transportation Management System
             </div>
         </div>
-        <div class="refresh-badge">
-            <div class="refresh-dot"></div>
-            <span>Auto-refresh 30s &nbsp;|&nbsp; Last update: <span id="last-updated"><?= date('H:i:s') ?></span></span>
+
+        <!-- PERIOD FILTER (tengah) -->
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+            <div class="period-filter">
+                <?php
+                $periods = [
+                    'this_month' => 'Bulan Ini',
+                    'last_month' => 'Bulan Lalu',
+                    'week' => 'Minggu Ini',
+                    'last_7' => '7 Hari',
+                    'last_30' => '30 Hari',
+                    'all' => 'Semua',
+                    'custom' => 'Custom',
+                ];
+                foreach ($periods as $key => $label):
+                    $active = ($periode === $key) ? 'active' : '';
+                    ?>
+                    <button class="period-btn <?= $active ?>" data-periode="<?= $key ?>"
+                        onclick="setPeriode('<?= $key ?>')"><?= $label ?></button>
+                <?php endforeach; ?>
+            </div>
+            <div class="custom-date-wrap <?= $periode === 'custom' ? 'show' : '' ?>" id="custom-date-wrap">
+                <input type="date" id="inp-date-from" value="<?= htmlspecialchars($custom_from ?: date('Y-m-01')) ?>">
+                <span style="color:var(--muted);font-size:11px;">s/d</span>
+                <input type="date" id="inp-date-to" value="<?= htmlspecialchars($custom_to ?: date('Y-m-d')) ?>">
+                <button onclick="applyCustom()"><i class="fas fa-check"></i> Terapkan</button>
+            </div>
+            <div class="period-label-badge">
+                <i class="fas fa-calendar-alt"></i>
+                <span id="periode-label-text"><?= htmlspecialchars($periode_label) ?></span>
+                &nbsp;·&nbsp; SLA &amp; Completed/Cancelled
+            </div>
         </div>
-        <div style="text-align:right;">
-            <div class="clock" id="clock">--:--:--</div>
-            <div class="date-label" id="date-label"><?= date('l, d F Y') ?></div>
+
+        <!-- KANAN: refresh badge + clock -->
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+            <div class="refresh-badge">
+                <div class="refresh-dot"></div>
+                <span>Auto-refresh 30s &nbsp;|&nbsp; Last update: <span
+                        id="last-updated"><?= date('H:i:s') ?></span></span>
+            </div>
+            <div style="text-align:right;">
+                <div class="clock" id="clock">--:--:--</div>
+                <div class="date-label" id="date-label"><?= date('l, d F Y') ?></div>
+            </div>
         </div>
     </div>
 
@@ -711,8 +827,9 @@
                     ✅ <span id="sla-ontime"><?= $sla_ontime ?></span> On-Time &nbsp;|&nbsp;
                     ❌ <span id="sla-late"><?= $sla_late ?></span> Late &nbsp;|&nbsp;
                     Total: <span id="sla-total"><?= $sla_total ?></span> delivery
-                    <?php if ($sla_total === 0): ?>&nbsp;<em style="opacity:.5;">(belum ada data
-                            delivery)</em><?php endif; ?>
+                    <?php if ($sla_total === 0): ?>
+                        &nbsp;<em style="opacity:.5;">(belum ada data delivery)</em>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -779,8 +896,8 @@
                                 </div>
                             </div>
                         <?php endforeach; ?>
-                    </div><!-- /.overdue-grid -->
-                </div><!-- /.overdue-scroll-track -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -830,8 +947,8 @@
                                 </div>
                             </div>
                         <?php endforeach; ?>
-                    </div><!-- /.overdue-grid -->
-                </div><!-- /.overdue-scroll-track -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -880,7 +997,7 @@
     </div>
 
     <!-- MAIN GRID ROW 2 -->
-    <div class="main-grid" style="padding-top:12px; padding-bottom:0;">
+    <div class="main-grid" style="padding-top:12px;padding-bottom:0;">
         <div class="section-panel">
             <div class="section-header sh-loading">
                 <div class="title" style="color:#0dcaf0;"><i class="fas fa-boxes"></i> Loading</div>
@@ -925,14 +1042,17 @@
 
     <!-- FOOTER -->
     <div class="tv-footer">
-        <div>TSC — Transportation Management System &nbsp;|&nbsp; <a href="<?= base_url('ftl_non_spx') ?>">Kelola
-                Shipment</a></div>
+        <div>TSC — Transportation Management System &nbsp;|&nbsp;
+            <a href="<?= base_url('ftl_non_spx') ?>">Kelola Shipment</a>
+        </div>
         <div>Refresh otomatis setiap <strong>30 detik</strong></div>
         <div>
-            <a href="<?= base_url('home') ?>" style="color:var(--muted);margin-right:12px;"><i class="fas fa-home"></i>
-                Dashboard</a>
-            <a href="<?= base_url('ftl_non_spx/tambah') ?>" style="color:#1cc88a;"><i class="fas fa-plus-circle"></i>
-                Tambah Shipment</a>
+            <a href="<?= base_url('home') ?>" style="color:var(--muted);margin-right:12px;">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+            <a href="<?= base_url('ftl_non_spx/tambah') ?>" style="color:#1cc88a;">
+                <i class="fas fa-plus-circle"></i> Tambah Shipment
+            </a>
         </div>
     </div>
 
@@ -954,12 +1074,10 @@
         setInterval(updateClock, 1000);
 
         // ════════════════════════════════════════════════════════
-        // VERTICAL AUTO SCROLL (panel list atas-bawah)
-        // Pakai setInterval bukan rAF supaya tidak dimatikan
-        // browser pas tab tidak fokus
+        // VERTICAL AUTO SCROLL
         // ════════════════════════════════════════════════════════
-        const SCROLL_SPEED = 1;      // px per tick
-        const TICK_MS = 30;     // interval ms (~33fps)
+        const SCROLL_SPEED = 1;
+        const TICK_MS = 30;
         const PAUSE_TOP_MS = 2500;
         const PAUSE_BOT_MS = 1500;
 
@@ -1002,12 +1120,10 @@
         setInterval(() => SCROLL_IDS.forEach(vTick), TICK_MS);
 
         // ════════════════════════════════════════════════════════
-        // HORIZONTAL AUTO SCROLL (overdue panels kiri-kanan)
-        // Pakai CSS transform translate bukan scrollLeft
-        // supaya lebih smooth dan tidak terpengaruh overflow hidden
+        // HORIZONTAL AUTO SCROLL (overdue panels)
         // ════════════════════════════════════════════════════════
-        const H_SPEED = 1;      // px per tick
-        const H_PAUSE_MS = 2000;   // pause di ujung kiri/kanan
+        const H_SPEED = 1;
+        const H_PAUSE_MS = 2000;
 
         const HORIZ_IDS = [
             { track: 'track-overdue', list: 'list-overdue' },
@@ -1017,11 +1133,7 @@
         const hScrollState = {};
 
         function hInit(ids) {
-            hScrollState[ids.track] = {
-                offset: 0,
-                goingRight: true,
-                pauseUntil: Date.now() + H_PAUSE_MS,
-            };
+            hScrollState[ids.track] = { offset: 0, goingRight: true, pauseUntil: Date.now() + H_PAUSE_MS };
             const grid = document.getElementById(ids.list);
             if (grid) grid.style.transform = 'translateX(0px)';
         }
@@ -1036,12 +1148,7 @@
             const gridW = grid.scrollWidth;
             const maxOffset = Math.max(0, gridW - trackW);
 
-            if (maxOffset < 10) {
-                // tidak perlu scroll — konten muat semua
-                grid.style.transform = 'translateX(0px)';
-                return;
-            }
-
+            if (maxOffset < 10) { grid.style.transform = 'translateX(0px)'; return; }
             if (Date.now() < st.pauseUntil) return;
 
             if (st.goingRight) {
@@ -1059,7 +1166,6 @@
                     st.pauseUntil = Date.now() + H_PAUSE_MS;
                 }
             }
-
             grid.style.transform = `translateX(-${st.offset}px)`;
         }
 
@@ -1105,58 +1211,58 @@
             const overdueClass = isOverdue ? ' overdue' : '';
 
             return `<div class="shipment-row ${extraClass}">
-                <div class="row-top">
-                    <span class="no-shipment">${esc(item.no_shipment)}</span>
-                    <span class="customer-name">${esc(item.nama_customer) || '-'}</span>
-                    <span class="truck-badge">${esc(item.truck_type) || '-'}</span>
-                </div>
-                <div class="row-mid">
-                    <i class="fas fa-map-marker-alt" style="color:#e74a3b;font-size:9px;"></i>
-                    <span>${esc(item.origin) || '-'}</span>
-                    <span class="route-arrow">→</span>
-                    <span style="color:#1cc88a;">${esc(item.dest1) || '-'}</span>
-                    ${dest2}
-                </div>
-                <div class="row-bot">
-                    <div class="driver-info">
-                        <span class="nopol-tag">${nopol}</span>
-                        <i class="fas fa-user" style="font-size:9px;"></i>
-                        <span>${driver}</span>
-                        ${vendor ? `<span style="font-size:9px;color:var(--muted);">— ${vendor}</span>` : ''}
-                    </div>
-                    <div class="target-time${overdueClass}">
-                        ${standby ? `<i class="fas fa-flag" style="font-size:9px;"></i> ${standby}` : ''}
-                        ${arrival ? `&nbsp;<i class="fas fa-flag-checkered" style="font-size:9px;"></i> ${arrival}` : ''}
-                    </div>
-                </div>
-            </div>`;
+        <div class="row-top">
+            <span class="no-shipment">${esc(item.no_shipment)}</span>
+            <span class="customer-name">${esc(item.nama_customer) || '-'}</span>
+            <span class="truck-badge">${esc(item.truck_type) || '-'}</span>
+        </div>
+        <div class="row-mid">
+            <i class="fas fa-map-marker-alt" style="color:#e74a3b;font-size:9px;"></i>
+            <span>${esc(item.origin) || '-'}</span>
+            <span class="route-arrow">→</span>
+            <span style="color:#1cc88a;">${esc(item.dest1) || '-'}</span>
+            ${dest2}
+        </div>
+        <div class="row-bot">
+            <div class="driver-info">
+                <span class="nopol-tag">${nopol}</span>
+                <i class="fas fa-user" style="font-size:9px;"></i>
+                <span>${driver}</span>
+                ${vendor ? `<span style="font-size:9px;color:var(--muted);">— ${vendor}</span>` : ''}
+            </div>
+            <div class="target-time${overdueClass}">
+                ${standby ? `<i class="fas fa-flag" style="font-size:9px;"></i> ${standby}` : ''}
+                ${arrival ? `&nbsp;<i class="fas fa-flag-checkered" style="font-size:9px;"></i> ${arrival}` : ''}
+            </div>
+        </div>
+    </div>`;
         }
 
         function renderOverdueRow(item) {
             const daysLate = Math.max(0, Math.floor((Date.now() - new Date(item.target_arrival_date).getTime()) / 86400000));
             const arrival = fmtDate(item.target_arrival_date, item.target_arrival_time);
             return `<div class="shipment-row overdue-row">
-                <div class="row-top">
-                    <span class="no-shipment">${esc(item.no_shipment)}</span>
-                    <span class="customer-name">${esc(item.nama_customer) || '-'}</span>
-                    <span class="overdue-days">+${daysLate}h</span>
-                </div>
-                <div class="row-mid">
-                    <i class="fas fa-map-marker-alt" style="color:#e74a3b;font-size:9px;"></i>
-                    <span>${esc(item.origin) || '-'}</span>
-                    <span class="route-arrow">→</span>
-                    <span style="color:#1cc88a;">${esc(item.dest1) || '-'}</span>
-                </div>
-                <div class="row-bot">
-                    <div class="driver-info">
-                        <span class="nopol-tag">${esc(item.nopol) || '-'}</span>
-                        <span>${esc(item.driver) || 'Belum diisi'}</span>
-                    </div>
-                    <span style="color:#e74a3b;font-weight:600;font-size:10px;">
-                        Target: ${arrival} &nbsp;|&nbsp; ${esc(item.status_shipment)}
-                    </span>
-                </div>
-            </div>`;
+        <div class="row-top">
+            <span class="no-shipment">${esc(item.no_shipment)}</span>
+            <span class="customer-name">${esc(item.nama_customer) || '-'}</span>
+            <span class="overdue-days">+${daysLate}h</span>
+        </div>
+        <div class="row-mid">
+            <i class="fas fa-map-marker-alt" style="color:#e74a3b;font-size:9px;"></i>
+            <span>${esc(item.origin) || '-'}</span>
+            <span class="route-arrow">→</span>
+            <span style="color:#1cc88a;">${esc(item.dest1) || '-'}</span>
+        </div>
+        <div class="row-bot">
+            <div class="driver-info">
+                <span class="nopol-tag">${esc(item.nopol) || '-'}</span>
+                <span>${esc(item.driver) || 'Belum diisi'}</span>
+            </div>
+            <span style="color:#e74a3b;font-weight:600;font-size:10px;">
+                Target: ${arrival} &nbsp;|&nbsp; ${esc(item.status_shipment)}
+            </span>
+        </div>
+    </div>`;
         }
 
         function renderOverdueStandbyRow(item) {
@@ -1164,28 +1270,28 @@
             const standby = fmtDate(item.target_standby_date, item.target_standby_time);
             const vendor = esc(item.nama_vendor) || '';
             return `<div class="shipment-row overdue-standby-row">
-                <div class="row-top">
-                    <span class="no-shipment">${esc(item.no_shipment)}</span>
-                    <span class="customer-name">${esc(item.nama_customer) || '-'}</span>
-                    <span class="overdue-standby-days">+${daysLate}h</span>
-                </div>
-                <div class="row-mid">
-                    <i class="fas fa-map-marker-alt" style="color:#e74a3b;font-size:9px;"></i>
-                    <span>${esc(item.origin) || '-'}</span>
-                    <span class="route-arrow">→</span>
-                    <span style="color:#1cc88a;">${esc(item.dest1) || '-'}</span>
-                </div>
-                <div class="row-bot">
-                    <div class="driver-info">
-                        <span class="nopol-tag">${esc(item.nopol) || '-'}</span>
-                        <span>${esc(item.driver) || 'Belum diisi'}</span>
-                        ${vendor ? `<span style="font-size:9px;color:var(--muted);">— ${vendor}</span>` : ''}
-                    </div>
-                    <span style="color:#f6c23e;font-weight:600;font-size:10px;">
-                        Standby: ${standby} &nbsp;|&nbsp; ${esc(item.status_shipment)}
-                    </span>
-                </div>
-            </div>`;
+        <div class="row-top">
+            <span class="no-shipment">${esc(item.no_shipment)}</span>
+            <span class="customer-name">${esc(item.nama_customer) || '-'}</span>
+            <span class="overdue-standby-days">+${daysLate}h</span>
+        </div>
+        <div class="row-mid">
+            <i class="fas fa-map-marker-alt" style="color:#e74a3b;font-size:9px;"></i>
+            <span>${esc(item.origin) || '-'}</span>
+            <span class="route-arrow">→</span>
+            <span style="color:#1cc88a;">${esc(item.dest1) || '-'}</span>
+        </div>
+        <div class="row-bot">
+            <div class="driver-info">
+                <span class="nopol-tag">${esc(item.nopol) || '-'}</span>
+                <span>${esc(item.driver) || 'Belum diisi'}</span>
+                ${vendor ? `<span style="font-size:9px;color:var(--muted);">— ${vendor}</span>` : ''}
+            </div>
+            <span style="color:#f6c23e;font-weight:600;font-size:10px;">
+                Standby: ${standby} &nbsp;|&nbsp; ${esc(item.status_shipment)}
+            </span>
+        </div>
+    </div>`;
         }
 
         function emptyState(icon, text) {
@@ -1194,8 +1300,6 @@
 
         // ════════════════════════════════════════════════════════
         // SMART RENDER LIST
-        // Vertical: hanya reset scroll kalau jumlah item berubah
-        // Horizontal: reset offset ke 0 kalau konten berubah
         // ════════════════════════════════════════════════════════
         const prevItemCounts = {};
 
@@ -1212,17 +1316,9 @@
 
             if (prevItemCounts[id] !== newCount) {
                 prevItemCounts[id] = newCount;
-
-                // Vertical list reset
-                if (SCROLL_IDS.includes(id)) {
-                    vInit(id);
-                }
-
-                // Horizontal overdue reset
+                if (SCROLL_IDS.includes(id)) vInit(id);
                 const horizEntry = HORIZ_IDS.find(h => h.list === id);
-                if (horizEntry) {
-                    hInit(horizEntry);
-                }
+                if (horizEntry) hInit(horizEntry);
             }
         }
 
@@ -1238,10 +1334,66 @@
         }
 
         // ════════════════════════════════════════════════════════
-        // AUTO REFRESH — cache-busting + no-cache headers
+        // PERIOD FILTER
+        // ════════════════════════════════════════════════════════
+        let currentPeriode = '<?= $periode ?>';
+        let currentDateFrom = '<?= $custom_from ?>';
+        let currentDateTo = '<?= $custom_to ?>';
+
+        function setPeriode(periode) {
+            currentPeriode = periode;
+
+            const wrap = document.getElementById('custom-date-wrap');
+            if (periode === 'custom') {
+                wrap.classList.add('show');
+                return;
+            }
+            wrap.classList.remove('show');
+            currentDateFrom = '';
+            currentDateTo = '';
+
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.periode === periode);
+            });
+
+            refreshDashboard();
+        }
+
+        function applyCustom() {
+            currentDateFrom = document.getElementById('inp-date-from').value;
+            currentDateTo = document.getElementById('inp-date-to').value;
+
+            if (!currentDateFrom || !currentDateTo) {
+                alert('Pilih tanggal dari dan sampai dulu ya!');
+                return;
+            }
+            if (currentDateFrom > currentDateTo) {
+                alert('Tanggal dari tidak boleh lebih besar dari tanggal sampai!');
+                return;
+            }
+
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.periode === 'custom');
+            });
+
+            refreshDashboard();
+        }
+
+        function buildRefreshUrl() {
+            let url = '<?= base_url('tms_dashboard/get_stats') ?>?_=' + Date.now()
+                + '&periode=' + encodeURIComponent(currentPeriode);
+            if (currentPeriode === 'custom' && currentDateFrom && currentDateTo) {
+                url += '&date_from=' + encodeURIComponent(currentDateFrom)
+                    + '&date_to=' + encodeURIComponent(currentDateTo);
+            }
+            return url;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // AUTO REFRESH
         // ════════════════════════════════════════════════════════
         function refreshDashboard() {
-            const url = '<?= base_url('tms_dashboard/get_stats') ?>?_=' + Date.now();
+            const url = buildRefreshUrl();
 
             fetch(url, {
                 method: 'GET',
@@ -1302,6 +1454,10 @@
                         if (atEl) atEl.textContent = sl.avg_transit_hours !== null ? sl.avg_transit_hours + 'h' : 'N/A';
                     }
 
+                    // Update periode label
+                    const plEl = document.getElementById('periode-label-text');
+                    if (plEl && data.periode_label) plEl.textContent = data.periode_label;
+
                     // Overdue Arrival
                     const overdueArr = data.overdue || [];
                     const overdueCount = overdueArr.length;
@@ -1331,8 +1487,9 @@
         }
 
         setInterval(refreshDashboard, 30000);
-        console.log('✅ FTL Non SPX Live Dashboard — Auto-refresh 30s | V-Scroll + H-Scroll ON | Cache-bust AKTIF');
+        console.log('✅ FTL Non SPX Live Dashboard — Auto-refresh 30s | Period Filter AKTIF | V-Scroll + H-Scroll ON');
     </script>
+
 </body>
 
 </html>

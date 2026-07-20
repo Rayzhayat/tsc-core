@@ -323,7 +323,7 @@ class Ftl_non_spx extends CI_Controller
             'no_shipment' => $this->input->post('no_shipment'),
             'customer_id' => $this->input->post('customer_id') ?: null,
             'origin' => $this->input->post('origin') ?: null,
-            'origin2' => $this->input->post('origin2') ?: null,   // ← BARU
+            'origin2' => $this->input->post('origin2') ?: null,
             'dest1' => $this->input->post('dest1') ?: null,
             'dest2' => $this->input->post('dest2') ?: null,
             'truck_type' => $this->input->post('truck_type') ?: null,
@@ -342,6 +342,14 @@ class Ftl_non_spx extends CI_Controller
 
         if ($this->M_ftl_non_spx->tambah($data)) {
             $new_id = $this->db->insert_id();
+            log_activity(
+                'ftl_non_spx',
+                'create',
+                $new_id,
+                'Buat shipment ' . $data['no_shipment'] . ' (' . $data['origin'] . ' → ' . $data['dest1'] . ')',
+                null,
+                $data
+            );
             $this->session->set_flashdata(
                 'success',
                 'Shipment <strong>' . $data['no_shipment'] . '</strong> berhasil dibuat! Silakan assign Vendor &amp; Driver.'
@@ -384,11 +392,14 @@ class Ftl_non_spx extends CI_Controller
             redirect('ftl_non_spx/ubah/' . $id);
         }
 
+        // Snapshot sebelum diubah (untuk audit log data_lama)
+        $shipment_lama = $this->M_ftl_non_spx->lihat_id($id);
+
         $data = [
             'no_shipment' => $this->input->post('no_shipment'),
             'customer_id' => $this->input->post('customer_id') ?: null,
             'origin' => $this->input->post('origin') ?: null,
-            'origin2' => $this->input->post('origin2') ?: null,   // ← BARU
+            'origin2' => $this->input->post('origin2') ?: null,
             'dest1' => $this->input->post('dest1') ?: null,
             'dest2' => $this->input->post('dest2') ?: null,
             'truck_type' => $this->input->post('truck_type') ?: null,
@@ -406,6 +417,14 @@ class Ftl_non_spx extends CI_Controller
         ];
 
         if ($this->M_ftl_non_spx->ubah($data, $id)) {
+            log_activity(
+                'ftl_non_spx',
+                'update',
+                $id,
+                'Edit shipment ' . $data['no_shipment'],
+                $shipment_lama ? (array) $shipment_lama : null,
+                $data
+            );
             $this->session->set_flashdata('success', 'Shipment <strong>' . $data['no_shipment'] . '</strong> berhasil diubah!');
         } else {
             $this->session->set_flashdata('error', 'Gagal mengubah shipment!');
@@ -431,6 +450,13 @@ class Ftl_non_spx extends CI_Controller
         }
 
         if ($this->M_ftl_non_spx->hapus($id)) {
+            log_activity(
+                'ftl_non_spx',
+                'delete',
+                $id,
+                'Hapus (soft) shipment ' . $shipment->no_shipment,
+                (array) $shipment
+            );
             $this->session->set_flashdata('success', 'Shipment <strong>' . $shipment->no_shipment . '</strong> berhasil dihapus.');
         } else {
             $this->session->set_flashdata('error', 'Gagal menghapus shipment!');
@@ -576,9 +602,11 @@ class Ftl_non_spx extends CI_Controller
         $sheet->setTitle('FTL Non SPX');
 
         $fmt_date = function ($d) {
-            return (!empty($d) && $d !== '0000-00-00') ? date('d/m/Y', strtotime($d)) : '-'; };
+            return (!empty($d) && $d !== '0000-00-00') ? date('d/m/Y', strtotime($d)) : '-';
+        };
         $fmt_time = function ($t) {
-            return !empty($t) ? substr($t, 0, 5) : '-'; };
+            return !empty($t) ? substr($t, 0, 5) : '-';
+        };
 
         // ── Header baris 1 — kolom F sekarang Origin 2, geser semua ke kanan ──
         $groups = [
@@ -979,7 +1007,8 @@ class Ftl_non_spx extends CI_Controller
 
             $rows = array_values(array_filter($rows, function ($row) {
                 return !empty(array_filter($row, function ($v) {
-                    return $v !== null && $v !== ''; }));
+                    return $v !== null && $v !== '';
+                }));
             }));
 
             if (count($rows) > 500) {
@@ -1432,7 +1461,8 @@ class Ftl_non_spx extends CI_Controller
 
         $fix_year = function ($y) {
             $y = (int) $y;
-            return ($y < 100) ? (($y >= 50) ? 1900 + $y : 2000 + $y) : $y; };
+            return ($y < 100) ? (($y >= 50) ? 1900 + $y : 2000 + $y) : $y;
+        };
         $make_date = function ($y, $m, $d) {
             $y = (int) $y;
             $m = (int) $m;

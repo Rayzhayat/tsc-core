@@ -1,3 +1,4 @@
+<!-- detail.php -->
 <!DOCTYPE html>
 <html lang="id">
 

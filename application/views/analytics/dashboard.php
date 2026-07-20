@@ -20,6 +20,13 @@
                         <a href="<?= base_url('analytics/weekly') ?>" class="btn btn-outline-secondary btn-sm">
                             <i class="fas fa-calendar-week me-1"></i> Weekly Report
                         </a>
+                        <a href="<?= base_url('analytics/unit_internal') ?>" class="btn btn-outline-dark btn-sm">
+                            <i class="fas fa-truck-pickup me-1"></i> Unit Internal
+                        </a>
+
+                        <a href="<?= base_url('data_quality') ?>" class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-database me-1"></i> Data Quality
+                        </a>
 
                         <?php if (in_array($level, ['superadmin', 'finance_staff'])): ?>
                             <a href="<?= base_url('analytics/import') ?>" class="btn btn-outline-primary btn-sm">
@@ -135,7 +142,8 @@
                             <div class="card-body py-2 px-3">
                                 <div class="text-xs fw-bold text-success text-uppercase mb-1">Total Revenue</div>
                                 <div class="h6 mb-0 fw-bold">Rp
-                                    <?= number_format($s->total_revenue ?? 0, 0, ',', '.') ?></div>
+                                    <?= number_format($s->total_revenue ?? 0, 0, ',', '.') ?>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -233,7 +241,8 @@
                                                     <td><span class="badge bg-warning text-dark"><?= $i + 1 ?></span></td>
                                                     <td class="fw-semibold"><?= htmlspecialchars($r->customer) ?></td>
                                                     <td class="text-end small">Rp
-                                                        <?= number_format($r->total_revenue, 0, ',', '.') ?></td>
+                                                        <?= number_format($r->total_revenue, 0, ',', '.') ?>
+                                                    </td>
                                                     <td
                                                         class="text-end small <?= $r->total_margin >= 0 ? 'text-success' : 'text-danger' ?>">
                                                         Rp <?= number_format($r->total_margin, 0, ',', '.') ?>
@@ -290,7 +299,8 @@
                                                             style="font-size:.65rem"><?= $r->sheet_type ?></span></td>
                                                     <td class="text-center"><?= number_format($r->total_shipment) ?></td>
                                                     <td class="text-end small">Rp
-                                                        <?= number_format($r->total_revenue, 0, ',', '.') ?></td>
+                                                        <?= number_format($r->total_revenue, 0, ',', '.') ?>
+                                                    </td>
                                                     <td
                                                         class="text-end small fw-semibold <?= $r->total_margin >= 0 ? 'text-success' : 'text-danger' ?>">
                                                         Rp <?= number_format($r->total_margin, 0, ',', '.') ?>

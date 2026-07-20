@@ -223,6 +223,10 @@ class Analytics extends CI_Controller
                 $rows = $this->M_analytics->top_vendor_support($filters, 100);
                 $headers = ['Vendor', 'Total Trip', 'Total Cost', 'Customer Dilayani', 'Total Rute'];
                 break;
+            case 'unit_internal':
+                $rows = $this->M_analytics->margin_per_nopol($filters);
+                $headers = ['Nopol', 'Truck Type', 'Total Trip', 'Total Customer', 'Customer Dilayani', 'Total Revenue', 'Total Margin', 'Avg Margin', 'Margin %'];
+                break;
             default:
                 $rows = [];
                 $headers = [];
@@ -519,6 +523,30 @@ class Analytics extends CI_Controller
         }
         fclose($out);
         exit;
+    }
+
+    public function unit_internal()
+    {
+        $login = $this->session->userdata('login');
+        $filters = $this->_get_filters();
+
+        $data['title'] = 'Margin Unit Internal (OWN UNIT)';
+        $data['aktif'] = 'analytics';
+        $data['level'] = $login['user_level'] ?? '';
+        $data['nama'] = $login['nama'] ?? '';
+        $data['filters'] = $filters;
+        $data['sheet_type_list'] = $this->M_analytics->get_sheet_type_list();
+        $data['periode_list'] = $this->M_analytics->get_periode_list($filters['sheet_type']);
+        $data['customer_list'] = $this->M_analytics->get_customer_list();
+
+        $data['summary'] = $this->M_analytics->margin_unit_internal_summary($filters);
+        $data['per_nopol'] = $this->M_analytics->margin_per_nopol($filters);
+        $data['nopol_kosong'] = $this->M_analytics->unit_internal_nopol_kosong($filters);
+
+        $this->load->view('partials/head', $data);
+        $this->load->view('analytics/unit_internal', $data);
+        $this->load->view('partials/footer');
+        $this->load->view('partials/js');
     }
 
     // ── Halaman Weekly Report ──

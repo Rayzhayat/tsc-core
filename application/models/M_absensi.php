@@ -10,6 +10,25 @@ class M_absensi extends CI_Model
         return $this->db->insert($this->table, $data);
     }
 
+    /**
+     * Resolve URL foto absensi. File placeholder (RFID / auto-out) itu
+     * static asset yang ikut ter-deploy bareng kode, BUKAN file upload —
+     * jadi diarahkan ke assets/img/, bukan uploads/absensi/.
+     */
+    public function resolve_photo_url($foto)
+    {
+        static $placeholder_map = [
+        'rfid_no_photo.jpg' => 'assets/img/rfid_no_photo.jpg',
+        'auto_out.jpg' => 'assets/img/auto_out.jpg',
+        ];
+
+        if (isset($placeholder_map[$foto])) {
+            return base_url($placeholder_map[$foto]);
+        }
+
+        return base_url('uploads/absensi/' . $foto);
+    }
+
     public function get_by_id($id)
     {
         $this->db->select('absensi.*, pengguna.nama as user_nama, pengguna.nik as user_nik');
@@ -115,15 +134,28 @@ class M_absensi extends CI_Model
         return $this->db->get()->result();
     }
 
-    public function get_by_period($start_date, $end_date, $user_id = null)
+    /**
+     * Ambil record absensi dalam periode tertentu.
+     *
+     * @param string      $start_date
+     * @param string      $end_date
+     * @param int|null    $user_id        Filter user tertentu
+     * @param array|null  $groups         Filter group yang DIPILIH user di form (multi-select)
+     * @param array|null  $allowed_groups Batas group yang BOLEH dilihat user non-admin
+     */
+    public function get_by_period($start_date, $end_date, $user_id = null, $groups = null, $allowed_groups = null)
     {
-        $this->db->select('absensi.*, pengguna.nama as user_nama, pengguna.nik as user_nik, pengguna.user_level');
+        $this->db->select('absensi.*, pengguna.nama as user_nama, pengguna.nik as user_nik, pengguna.user_level, pengguna.group_karyawan');
         $this->db->from($this->table);
         $this->db->join('pengguna', 'pengguna.id = absensi.user_id');
         $this->db->where('absensi.tanggal >=', $start_date);
         $this->db->where('absensi.tanggal <=', $end_date);
         if ($user_id)
             $this->db->where('absensi.user_id', $user_id);
+        if (is_array($groups) && !empty($groups))
+            $this->db->where_in('pengguna.group_karyawan', $groups);
+        if (is_array($allowed_groups))
+            $this->db->where_in('pengguna.group_karyawan', $allowed_groups);
         $this->db->order_by('absensi.tanggal', 'DESC');
         $this->db->order_by('absensi.waktu', 'ASC');
         return $this->db->get()->result();
@@ -186,59 +218,71 @@ class M_absensi extends CI_Model
         return $this->db->get()->result();
     }
 
-    public function get_summary_stats($start, $end, $group = null, $user_id = null, $allowed_groups = null)
+    /**
+     * Statistik ringkas per karyawan (dipakai di kartu summary & chart laporan.php).
+     *
+     * @param string      $start
+     * @param string      $end
+     * @param array|null  $groups         Group yang DIPILIH di filter (multi-select)
+     * @param int|null    $user_id
+     * @param array|null  $allowed_groups Batas group untuk user non-admin
+     */
+    public function get_summary_stats($start, $end, $groups = null, $user_id = null, $allowed_groups = null)
     {
         $this->db->select('
-            absensi.user_id,
-            pengguna.nama as user_nama,
-            pengguna.nik  as user_nik,
-            pengguna.user_level,
-            SUM(absensi.tipe = "in")  as count_in,
-            SUM(absensi.tipe = "out") as count_out
-        ');
-        $this->db->from('absensi');
-        $this->db->join('pengguna', 'pengguna.id = absensi.user_id');
-        $this->db->where('absensi.tanggal >=', $start);
-        $this->db->where('absensi.tanggal <=', $end);
+        pengguna.id as user_id,
+        pengguna.nama as user_nama,
+        pengguna.nik  as user_nik,
+        pengguna.user_level,
+        SUM(absensi.tipe = "in")  as count_in,
+        SUM(absensi.tipe = "out") as count_out
+    ');
+        $this->db->from('pengguna');
+        $this->db->join(
+            'absensi',
+            'absensi.user_id = pengguna.id AND absensi.tanggal >= "' . $this->db->escape_str($start) . '" AND absensi.tanggal <= "' . $this->db->escape_str($end) . '"',
+            'left'
+        );
 
-        if ($group)
-            $this->db->where('pengguna.group_karyawan', $group);
+        if (is_array($groups) && !empty($groups))
+            $this->db->where_in('pengguna.group_karyawan', $groups);
         if ($user_id)
-            $this->db->where('absensi.user_id', $user_id);
+            $this->db->where('pengguna.id', $user_id);
         if (is_array($allowed_groups))
             $this->db->where_in('pengguna.group_karyawan', $allowed_groups);
 
-        $this->db->group_by('absensi.user_id');
+        $this->db->group_by('pengguna.id');
         return $this->db->get()->result();
     }
 
     /**
-     * Server-side pagination untuk DataTables — dengan dukungan dynamic sorting.
+     * Server-side pagination untuk DataTables — dengan dukungan dynamic sorting
+     * dan filter multi-group.
      *
      * @param string      $start          Tanggal mulai (Y-m-d)
      * @param string      $end            Tanggal akhir (Y-m-d)
-     * @param string|null $group          Filter group karyawan
+     * @param array|null  $groups         Group yang DIPILIH di filter (multi-select)  ← BARU (dulu single string)
      * @param int|null    $user_id        Filter user tertentu
      * @param string|null $tipe           Filter tipe absensi (in/out)
      * @param array|null  $allowed_groups Daftar group yang boleh dilihat (non-admin)
      * @param int         $offset         OFFSET untuk paginasi
      * @param int         $limit          LIMIT per halaman
      * @param string      $search         Kata kunci pencarian
-     * @param string      $order_col      Nama kolom DB untuk ORDER BY  ← BARU
-     * @param string      $order_dir      Arah sort: 'asc' | 'desc'     ← BARU
+     * @param string      $order_col      Nama kolom DB untuk ORDER BY
+     * @param string      $order_dir      Arah sort: 'asc' | 'desc'
      */
     public function get_paginated(
         $start,
         $end,
-        $group,
+        $groups,
         $user_id,
         $tipe,
         $allowed_groups,
         $offset,
         $limit,
         $search,
-        $order_col = 'absensi.tanggal',   // ← default sama seperti sebelumnya
-        $order_dir = 'desc'               // ← default sama seperti sebelumnya
+        $order_col = 'absensi.tanggal',
+        $order_dir = 'desc'
     ) {
         // Whitelist kolom yang boleh di-sort untuk keamanan
         $allowed_order_cols = [
@@ -258,15 +302,15 @@ class M_absensi extends CI_Model
         }
         $order_dir = in_array(strtolower($order_dir), ['asc', 'desc']) ? strtolower($order_dir) : 'desc';
 
-        // ── closure untuk menyusun WHERE yang sama dipakai di 3 query ────────
-        $base = function () use ($start, $end, $group, $user_id, $tipe, $allowed_groups, $search) {
+        // ── closure untuk menyusun WHERE yang sama dipakai di beberapa query ──
+        $base = function () use ($start, $end, $groups, $user_id, $tipe, $allowed_groups, $search) {
             $this->db->from('absensi');
             $this->db->join('pengguna', 'pengguna.id = absensi.user_id');
             $this->db->where('absensi.tanggal >=', $start);
             $this->db->where('absensi.tanggal <=', $end);
 
-            if ($group)
-                $this->db->where('pengguna.group_karyawan', $group);
+            if (is_array($groups) && !empty($groups))
+                $this->db->where_in('pengguna.group_karyawan', $groups);
             if ($user_id)
                 $this->db->where('absensi.user_id', $user_id);
             if ($tipe)
@@ -288,8 +332,8 @@ class M_absensi extends CI_Model
         $this->db->join('pengguna', 'pengguna.id = absensi.user_id');
         $this->db->where('absensi.tanggal >=', $start);
         $this->db->where('absensi.tanggal <=', $end);
-        if ($group)
-            $this->db->where('pengguna.group_karyawan', $group);
+        if (is_array($groups) && !empty($groups))
+            $this->db->where_in('pengguna.group_karyawan', $groups);
         if ($user_id)
             $this->db->where('absensi.user_id', $user_id);
         if ($tipe)
@@ -327,7 +371,7 @@ class M_absensi extends CI_Model
 
         // ── Format baris untuk DataTables ────────────────────────────────────
         foreach ($rows as &$r) {
-            $r->photo_url = base_url('uploads/absensi/' . $r->foto);
+            $r->photo_url = $this->resolve_photo_url($r->foto);
             $r->maps_url = "https://www.google.com/maps?q={$r->latitude},{$r->longitude}";
             $r->tanggal_fmt = date('d/m/Y', strtotime($r->tanggal));
             // Flag auto-out: jika metode = 'auto' dan tipe = 'out'

@@ -64,6 +64,164 @@ class Laporan_keuangan extends CI_Controller
         $this->load->view('laporan_keuangan/lihat', $data);
     }
 
+    public function detail_akun_excel($akun_id)
+    {
+        $akun = $this->M_akunbiaya->get_by_id($akun_id);
+        if (!$akun) {
+            $this->session->set_flashdata('error', 'Akun tidak ditemukan');
+            redirect('laporan_keuangan');
+            return;
+        }
+
+        $start_date = $this->input->get('start_date') ?: date('Y-m-01');
+        $end_date = $this->input->get('end_date') ?: date('Y-m-t');
+
+        // Saldo awal periode (dynamic) - SAMA PERSIS logic-nya kayak detail_akun()
+        $query_saldo_awal = "
+        SELECT 
+            ? + CASE 
+                WHEN ? IN ('OCAS', 'LIAB', 'EKUI', 'REVE') THEN 
+                    COALESCE(SUM(kredit - debit), 0)
+                ELSE 
+                    COALESCE(SUM(debit - kredit), 0)
+            END as saldo_awal_periode
+        FROM tb_transaksi_keuangan
+        WHERE akun_id = ?
+          AND tanggal < ?
+    ";
+        $saldo_awal_result = $this->db->query($query_saldo_awal, [
+            $akun->saldo_awal,
+            $akun->tipe_akun,
+            $akun_id,
+            $start_date
+        ])->row();
+
+        $saldo_awal_periode = $saldo_awal_result ? $saldo_awal_result->saldo_awal_periode : $akun->saldo_awal;
+
+        $transaksi = $this->M_transaksi_keuangan->get_by_akun($akun_id, $start_date, $end_date);
+
+        $is_liability_type = in_array($akun->tipe_akun, ['LIAB', 'EKUI', 'REVE', 'OCAS']);
+        $saldo = $saldo_awal_periode;
+        $total_debit = 0;
+        $total_kredit = 0;
+
+        foreach ($transaksi as $item) {
+            $saldo = $is_liability_type
+                ? $saldo + $item->kredit - $item->debit
+                : $saldo + $item->debit - $item->kredit;
+
+            $item->saldo_running = $saldo;
+            $total_debit += $item->debit;
+            $total_kredit += $item->kredit;
+        }
+        $saldo_akhir = $saldo;
+
+        // ================= GENERATE EXCEL =================
+        require_once APPPATH . '../vendor/autoload.php';
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Detail Akun');
+
+        $sheet->getColumnDimension('A')->setWidth(5);
+        $sheet->getColumnDimension('B')->setWidth(12);
+        $sheet->getColumnDimension('C')->setWidth(18);
+        $sheet->getColumnDimension('D')->setWidth(10);
+        $sheet->getColumnDimension('E')->setWidth(40);
+        $sheet->getColumnDimension('F')->setWidth(18);
+        $sheet->getColumnDimension('G')->setWidth(18);
+        $sheet->getColumnDimension('H')->setWidth(18);
+
+        $row = 1;
+
+        // Title
+        $sheet->setCellValue('A' . $row, 'DETAIL TRANSAKSI AKUN');
+        $sheet->mergeCells('A' . $row . ':H' . $row);
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true)->setSize(16);
+        $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('A' . $row)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('FF667eea');
+        $sheet->getStyle('A' . $row)->getFont()->getColor()->setARGB('FFFFFFFF');
+        $row++;
+
+        $sheet->setCellValue('A' . $row, $akun->nama . ' (' . $akun->kode_perkiraan . ')');
+        $sheet->mergeCells('A' . $row . ':H' . $row);
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true)->setSize(12);
+        $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $row++;
+
+        $sheet->setCellValue('A' . $row, 'Periode: ' . date('d M Y', strtotime($start_date)) . ' - ' . date('d M Y', strtotime($end_date)));
+        $sheet->mergeCells('A' . $row . ':H' . $row);
+        $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $row += 2;
+
+        // Header tabel
+        $headers = ['No', 'Tanggal', 'No Transaksi', 'Tipe', 'Keterangan', 'Debit', 'Kredit', 'Saldo'];
+        $col = 'A';
+        foreach ($headers as $h) {
+            $sheet->setCellValue($col . $row, $h);
+            $col++;
+        }
+        $sheet->getStyle('A' . $row . ':H' . $row)->getFont()->setBold(true);
+        $sheet->getStyle('A' . $row . ':H' . $row)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('FF4e73df');
+        $sheet->getStyle('A' . $row . ':H' . $row)->getFont()->getColor()->setARGB('FFFFFFFF');
+        $table_start = $row;
+        $row++;
+
+        // Saldo awal
+        $sheet->mergeCells('A' . $row . ':E' . $row);
+        $sheet->setCellValue('A' . $row, 'Saldo Awal Periode');
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+        $sheet->setCellValue('F' . $row, '-');
+        $sheet->setCellValue('G' . $row, '-');
+        $sheet->setCellValue('H' . $row, $saldo_awal_periode);
+        $sheet->getStyle('H' . $row)->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('A' . $row . ':H' . $row)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('FFD9EDF7');
+        $row++;
+
+        // Detail transaksi
+        $no = 1;
+        foreach ($transaksi as $item) {
+            $sheet->setCellValue('A' . $row, $no++);
+            $sheet->setCellValue('B' . $row, date('d/m/Y', strtotime($item->tanggal)));
+            $sheet->setCellValue('C' . $row, $item->no_transaksi);
+            $sheet->setCellValue('D' . $row, $item->tipe);
+            $sheet->setCellValue('E' . $row, $item->keterangan);
+            $sheet->setCellValue('F' . $row, $item->debit > 0 ? $item->debit : null);
+            $sheet->setCellValue('G' . $row, $item->kredit > 0 ? $item->kredit : null);
+            $sheet->setCellValue('H' . $row, $item->saldo_running);
+            $sheet->getStyle('F' . $row)->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->getStyle('H' . $row)->getNumberFormat()->setFormatCode('#,##0');
+            $row++;
+        }
+
+        // Saldo akhir
+        $sheet->mergeCells('A' . $row . ':E' . $row);
+        $sheet->setCellValue('A' . $row, 'Saldo Akhir Periode');
+        $sheet->setCellValue('F' . $row, $total_debit);
+        $sheet->setCellValue('G' . $row, $total_kredit);
+        $sheet->setCellValue('H' . $row, $saldo_akhir);
+        $sheet->getStyle('F' . $row . ':H' . $row)->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('A' . $row . ':H' . $row)->getFont()->setBold(true);
+        $sheet->getStyle('A' . $row . ':H' . $row)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('FFF8F9FC');
+        $table_end = $row;
+
+        // Border seluruh tabel
+        $sheet->getStyle('A' . $table_start . ':H' . $table_end)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+        // Output
+        $filename = 'Detail_' . preg_replace('/[^A-Za-z0-9]/', '_', $akun->nama) . '_'
+            . date('Ymd', strtotime($start_date)) . '_' . date('Ymd', strtotime($end_date)) . '.xlsx';
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
+
     // Detail transaksi per akun
     public function detail_akun($akun_id)
     {
@@ -86,7 +244,7 @@ class Laporan_keuangan extends CI_Controller
         $data['start_date'] = $start_date;
         $data['end_date'] = $end_date;
 
-        // 🔥 FIX: Calculate DYNAMIC saldo awal (saldo akhir periode sebelumnya)
+        // ðŸ”¥ FIX: Calculate DYNAMIC saldo awal (saldo akhir periode sebelumnya)
         $query_saldo_awal = "
             SELECT 
                 ? + CASE 
@@ -113,7 +271,7 @@ class Laporan_keuangan extends CI_Controller
         // Get transaksi by akun
         $data['transaksi'] = $this->M_transaksi_keuangan->get_by_akun($akun_id, $start_date, $end_date);
 
-        // 🔥 FIX: KONSISTEN pakai DEBIT-KREDIT untuk semua akun
+        // ðŸ”¥ FIX: KONSISTEN pakai DEBIT-KREDIT untuk semua akun
         $saldo = $saldo_awal_periode; // Start from dynamic saldo awal!
         $total_debit = 0;
         $total_kredit = 0;
@@ -609,20 +767,20 @@ class Laporan_keuangan extends CI_Controller
         $total_cogs = array_sum(array_column($data['cogs'], 'nominal'));
         $total_exps = array_sum(array_column($data['exps'], 'nominal'));
 
-        // 🔥 PPH dipotong Customer (dari OCAS PPH 23 sisi pemasukan/piutang)
+        // ðŸ”¥ PPH dipotong Customer (dari OCAS PPH 23 sisi pemasukan/piutang)
         // Ambil dari transaksi keuangan akun OCAS PPH customer (kode 51 atau sesuai config)
-        // 🔥 PPH dipotong Customer (Customer motong kita) → kode 54 (OCLY)
+        // ðŸ”¥ PPH dipotong Customer (Customer motong kita) â†’ kode 54 (OCLY)
         $pph_customer = $this->db
             ->select('SUM(tk.kredit - tk.debit) as total')
             ->from('tb_transaksi_keuangan tk')
             ->join('tb_akunbiaya ab', 'ab.id = tk.akun_id')
-            ->where('ab.kode_perkiraan', '54')   // ✅ OCLY - dipotong customer
+            ->where('ab.kode_perkiraan', '54')   // âœ… OCLY - dipotong customer
             ->where('tk.tanggal >=', $tanggal_awal)
             ->where('tk.tanggal <=', $tanggal_akhir)
             ->get()->row();
         $total_pph_customer = abs((float) ($pph_customer->total ?? 0));
 
-        // 🔥 PPH memotong dari Vendor → kode 51 (OCAS)
+        // ðŸ”¥ PPH memotong dari Vendor â†’ kode 51 (OCAS)
         $pph_vendor = $this->db
             ->select('SUM(pph) as total')
             ->from('tb_pengeluaran')

@@ -15,6 +15,17 @@ class M_pengguna extends CI_Model
         return $this->db->get_where('pengguna', ['id' => $id])->row();
     }
 
+    public function get_active_by_groups($groups = null)
+    {
+        $this->db->select('id, nama, nik, user_level, group_karyawan');
+        $this->db->from('pengguna');
+        $this->db->where('status_akun', 'aktif');
+        if (is_array($groups) && !empty($groups)) {
+            $this->db->where_in('group_karyawan', $groups);
+        }
+        $this->db->order_by('nama', 'ASC');
+        return $this->db->get()->result();
+    }
     public function tambah($data)
     {
         return $this->db->insert('pengguna', $data);

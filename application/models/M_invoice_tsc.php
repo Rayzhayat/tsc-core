@@ -29,7 +29,7 @@ class M_invoice_tsc extends CI_Model
     }
 
     /**
-     * ✅ FIXED: Get current logged-in user
+     * Get current logged-in user
      */
     private function get_current_user()
     {
@@ -38,12 +38,39 @@ class M_invoice_tsc extends CI_Model
     }
 
     /**
+     * Apply customer_id filter — support single value atau array
+     * Dipanggil dari count_all() dan get_all()
+     *
+     * @param string|array|null $customer_id
+     */
+    private function apply_customer_filter($customer_id)
+    {
+        if (empty($customer_id))
+            return;
+
+        // Normalise: bisa string tunggal atau array
+        $ids = is_array($customer_id)
+            ? array_values(array_filter(array_map('trim', $customer_id)))
+            : [trim($customer_id)];
+
+        if (empty($ids))
+            return;
+
+        if (count($ids) === 1) {
+            // Single → WHERE biasa (lebih efisien, pakai index)
+            $this->db->where('i.customer_id', reset($ids));
+        } else {
+            // Multiple → WHERE IN
+            $this->db->where_in('i.customer_id', $ids);
+        }
+    }
+
+    /**
      * Update PAID invoice - hanya data non-finansial, NO jurnal changes
      * Superadmin only
      */
     public function update_paid_invoice($id, $data)
     {
-        // Pastikan field finansial & status tidak ikut terupdate
         $forbidden = [
             'status',
             'grand_total',
@@ -63,7 +90,6 @@ class M_invoice_tsc extends CI_Model
 
         $this->db->where('id', $id)->update('tb_invoice_tsc', $data);
 
-        // Sync no_invoice & due_date ke tb_piutang_usaha juga (biar konsisten)
         $piutang_update = [];
         if (isset($data['no_invoice']))
             $piutang_update['no_invoice'] = $data['no_invoice'];
@@ -81,8 +107,6 @@ class M_invoice_tsc extends CI_Model
 
     /**
      * Cancel invoice with proper accounting reversal
-     * @param int $id Invoice ID
-     * @return bool
      */
     public function cancel_invoice($id)
     {
@@ -90,7 +114,6 @@ class M_invoice_tsc extends CI_Model
 
         log_message('debug', '=== CANCEL INVOICE START - ID: ' . $id . ' ===');
 
-        // Get invoice data
         $invoice = $this->get_by_id($id);
         if (!$invoice) {
             log_message('error', 'Invoice not found: ID ' . $id);
@@ -98,25 +121,19 @@ class M_invoice_tsc extends CI_Model
             return false;
         }
 
-        // Check if already paid (cannot cancel paid invoice)
         if ($invoice->status == 'paid') {
             log_message('error', 'Cannot cancel paid invoice: ' . $invoice->no_invoice);
             return false;
         }
 
-        log_message('debug', 'Cancelling invoice: ' . $invoice->no_invoice);
-
-        // 1. Create REVERSAL journal entries (opposite of create)
         $this->create_cancellation_entries($invoice);
 
-        // 2. Update invoice status
         $this->db->where('id', $id)->update('tb_invoice_tsc', [
             'status' => 'cancelled',
             'cancelled_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s')
         ]);
 
-        // 3. Update piutang status
         $this->db->where('invoice_id', $id)->update('tb_piutang_usaha', [
             'status' => 'cancelled',
             'outstanding' => 0
@@ -135,17 +152,12 @@ class M_invoice_tsc extends CI_Model
 
     /**
      * Create cancellation journal entries (REVERSAL)
-     * @param object $invoice Invoice data
-     * @return bool
      */
     private function create_cancellation_entries($invoice)
     {
         log_message('debug', '=== CREATE CANCELLATION ENTRIES START ===');
 
-        // ✅ FIXED: Get current user
         $created_by = $this->get_current_user();
-
-        // Get akun IDs
         $akun_piutang = $this->get_akun_id_by_kode('60');
         $akun_pendapatan = $this->get_akun_id_by_kode('20');
         $akun_ppn = $this->get_akun_id_by_kode('53');
@@ -156,9 +168,7 @@ class M_invoice_tsc extends CI_Model
             return false;
         }
 
-        // REVERSAL ENTRIES (kebalikan dari create)
-
-        // 1. KREDIT: Piutang Usaha (REVERSE dari DEBIT)
+        // 1. KREDIT: Piutang Usaha
         $this->db->insert('tb_transaksi_keuangan', [
             'tanggal' => date('Y-m-d'),
             'no_transaksi' => 'CANCEL-' . $invoice->no_invoice,
@@ -171,12 +181,10 @@ class M_invoice_tsc extends CI_Model
             'referensi_tipe' => 'Cancelled_Invoice',
             'referensi_id' => $invoice->id,
             'created_at' => date('Y-m-d H:i:s'),
-            'created_by' => $created_by // ✅ FIXED
+            'created_by' => $created_by
         ]);
 
-        log_message('debug', 'Reversal Entry 1 (Piutang) - Insert ID: ' . $this->db->insert_id());
-
-        // 2. DEBIT: Pendapatan (REVERSE dari KREDIT)
+        // 2. DEBIT: Pendapatan
         $this->db->insert('tb_transaksi_keuangan', [
             'tanggal' => date('Y-m-d'),
             'no_transaksi' => 'CANCEL-' . $invoice->no_invoice,
@@ -189,12 +197,10 @@ class M_invoice_tsc extends CI_Model
             'referensi_tipe' => 'Cancelled_Invoice',
             'referensi_id' => $invoice->id,
             'created_at' => date('Y-m-d H:i:s'),
-            'created_by' => $created_by // ✅ FIXED
+            'created_by' => $created_by
         ]);
 
-        log_message('debug', 'Reversal Entry 2 (Pendapatan) - Insert ID: ' . $this->db->insert_id());
-
-        // 3. DEBIT: PPN Keluaran (REVERSE dari KREDIT)
+        // 3. DEBIT: PPN Keluaran
         if ($invoice->ppn_amount > 0 && $akun_ppn) {
             $this->db->insert('tb_transaksi_keuangan', [
                 'tanggal' => date('Y-m-d'),
@@ -208,13 +214,11 @@ class M_invoice_tsc extends CI_Model
                 'referensi_tipe' => 'Cancelled_Invoice',
                 'referensi_id' => $invoice->id,
                 'created_at' => date('Y-m-d H:i:s'),
-                'created_by' => $created_by // ✅ FIXED
+                'created_by' => $created_by
             ]);
-
-            log_message('debug', 'Reversal Entry 3 (PPN) - Insert ID: ' . $this->db->insert_id());
         }
 
-        // 4. KREDIT: PPH (REVERSE dari DEBIT)
+        // 4. KREDIT: PPH
         if ($invoice->pph_amount > 0 && $akun_pph) {
             $this->db->insert('tb_transaksi_keuangan', [
                 'tanggal' => date('Y-m-d'),
@@ -228,37 +232,31 @@ class M_invoice_tsc extends CI_Model
                 'referensi_tipe' => 'Cancelled_Invoice',
                 'referensi_id' => $invoice->id,
                 'created_at' => date('Y-m-d H:i:s'),
-                'created_by' => $created_by // ✅ FIXED
+                'created_by' => $created_by
             ]);
-
-            log_message('debug', 'Reversal Entry 4 (PPH) - Insert ID: ' . $this->db->insert_id());
         }
 
         log_message('debug', '=== CREATE CANCELLATION ENTRIES COMPLETE ===');
         return true;
     }
+
     // ==================== CREATE ====================
 
     public function create_invoice($data, $items)
     {
         $this->db->trans_start();
 
-        // Insert invoice header
         $this->db->insert('tb_invoice_tsc', $data);
         $invoice_id = $this->db->insert_id();
 
         log_message('debug', 'Invoice created with ID: ' . $invoice_id);
 
-        // Insert items
         foreach ($items as $index => $item) {
             $item['invoice_id'] = $invoice_id;
             $item['sort_order'] = $index + 1;
             $this->db->insert('tb_invoice_tsc_items', $item);
         }
 
-        log_message('debug', 'Items inserted: ' . count($items));
-
-        // Create piutang usaha
         $piutang_result = $this->create_piutang($invoice_id, $data);
 
         if (!$piutang_result) {
@@ -274,7 +272,6 @@ class M_invoice_tsc extends CI_Model
             return false;
         }
 
-        log_message('debug', 'Invoice transaction completed successfully');
         return $invoice_id;
     }
 
@@ -294,9 +291,6 @@ class M_invoice_tsc extends CI_Model
 
         $this->db->insert('tb_piutang_usaha', $piutang);
 
-        log_message('debug', 'Piutang created for invoice: ' . $data['no_invoice']);
-
-        // Create accounting entries - PASS invoice_id
         $accounting_result = $this->create_accounting_entries($data, $invoice_id);
 
         if (!$accounting_result) {
@@ -307,18 +301,20 @@ class M_invoice_tsc extends CI_Model
         return true;
     }
 
+    // ==================== COUNT (untuk pagination) ====================
+
     /**
-     * Count total records with filters (for pagination)
-     * @param array $filters
-     * @return int
+     * Count total records with filters
+     * Mendukung filter 'overdue' selain status biasa
+     * customer_id bisa string tunggal ATAU array (multi-select)
      */
     public function count_all($filters = [])
     {
         $this->db->from('tb_invoice_tsc i');
 
-        if (!empty($filters['customer_id'])) {
-            $this->db->where('i.customer_id', $filters['customer_id']);
-        }
+        // ── Multi-select customer ──
+        $this->apply_customer_filter($filters['customer_id'] ?? null);
+
         if (!empty($filters['date_from'])) {
             $this->db->where('i.invoice_date >=', $filters['date_from']);
         }
@@ -326,7 +322,12 @@ class M_invoice_tsc extends CI_Model
             $this->db->where('i.invoice_date <=', $filters['date_to']);
         }
         if (!empty($filters['status'])) {
-            $this->db->where('i.status', $filters['status']);
+            if ($filters['status'] === 'overdue') {
+                $this->db->where_in('i.status', ['sent', 'draft', 'unsent']);
+                $this->db->where('i.due_date <', date('Y-m-d'));
+            } else {
+                $this->db->where('i.status', $filters['status']);
+            }
         }
         if (!empty($filters['keyword'])) {
             $this->db->group_start()
@@ -344,7 +345,6 @@ class M_invoice_tsc extends CI_Model
 
     /**
      * Get all revenue accounts for dropdown
-     * @return array
      */
     public function get_revenue_accounts()
     {
@@ -359,141 +359,105 @@ class M_invoice_tsc extends CI_Model
     {
         log_message('debug', '=== CREATE ACCOUNTING ENTRIES START ===');
         log_message('debug', 'Invoice ID: ' . $invoice_id);
-        log_message('debug', 'Invoice No: ' . $data['no_invoice']);
-        log_message('debug', 'Grand Total: ' . $data['grand_total']);
 
-        // ✅ FIXED: Get current user (never fallback to 'system')
         $created_by = isset($data['created_by']) && !empty($data['created_by'])
             ? $data['created_by']
             : $this->get_current_user();
 
-        log_message('debug', 'Created by: ' . $created_by);
-
-        // 🔥 GET AKUN IDs
-        $akun_piutang = $this->get_akun_id_by_kode('60');      // Piutang Usaha
-
-        // 🔥 NEW: Revenue account dari pilihan user (bukan hardcode kode 20)
+        $akun_piutang = $this->get_akun_id_by_kode('60');
         $akun_pendapatan = isset($data['revenue_account_id']) && !empty($data['revenue_account_id'])
-            ? $data['revenue_account_id']  // Dari dropdown
-            : $this->get_akun_id_by_kode('20');  // Fallback ke kode 20 (Pendapatan)
+            ? $data['revenue_account_id']
+            : $this->get_akun_id_by_kode('20');
+        $akun_ppn = $this->get_akun_id_by_kode('53');
+        $akun_pph = $this->get_akun_id_by_kode('54');
 
-        $akun_ppn = $this->get_akun_id_by_kode('53');          // PPN Keluaran
-        $akun_pph = $this->get_akun_id_by_kode('54');          // PPH 23 Dipotong
-
-        // Validate required akun exists
         if (!$akun_piutang || !$akun_pendapatan) {
-            log_message('error', 'Required akun not found! Piutang: ' . $akun_piutang . ', Pendapatan: ' . $akun_pendapatan);
+            log_message('error', 'Required akun not found!');
             return false;
         }
 
-        log_message('debug', 'Using Revenue Account ID: ' . $akun_pendapatan);
-
-        // 1. DEBIT: Piutang Usaha (60)
-        $entry1 = [
-            'tanggal' => $data['invoice_date'],
-            'no_transaksi' => $data['no_invoice'],
-            'tipe' => 'IN',
-            'akun_id' => $akun_piutang,
-            'nominal' => $data['grand_total'],
-            'debit' => $data['grand_total'],
-            'kredit' => 0,
-            'keterangan' => 'Invoice TSC - ' . substr($data['customer_nama'], 0, 50),
-            'referensi_tipe' => 'Manual',
-            'referensi_id' => $invoice_id,
-            'created_at' => date('Y-m-d H:i:s'),
-            'created_by' => $created_by // ✅ FIXED
-        ];
-
-        log_message('debug', 'Inserting Entry 1 (Piutang Usaha - Kode 60, ID ' . $akun_piutang . ')');
-
-        if (!$this->db->insert('tb_transaksi_keuangan', $entry1)) {
-            $error = $this->db->error();
-            log_message('error', 'FAILED Entry 1 - Error Code: ' . $error['code'] . ' Message: ' . $error['message']);
-            return false;
-        }
-
-        log_message('debug', 'Entry 1 SUCCESS - Insert ID: ' . $this->db->insert_id());
-
-        // 2. KREDIT: Pendapatan (Dynamic - sesuai pilihan user)
-        $entry2 = [
-            'tanggal' => $data['invoice_date'],
-            'no_transaksi' => $data['no_invoice'],
-            'tipe' => 'OUT',
-            'akun_id' => $akun_pendapatan,  // 🔥 DYNAMIC!
-            'nominal' => $data['subtotal'],
-            'debit' => 0,
-            'kredit' => $data['subtotal'],
-            'keterangan' => 'Pendapatan - Invoice ' . $data['no_invoice'],
-            'referensi_tipe' => 'Manual',
-            'referensi_id' => $invoice_id,
-            'created_at' => date('Y-m-d H:i:s'),
-            'created_by' => $created_by // ✅ FIXED
-        ];
-
-        log_message('debug', 'Inserting Entry 2 (Pendapatan - ID ' . $akun_pendapatan . ')');
-
-        if (!$this->db->insert('tb_transaksi_keuangan', $entry2)) {
-            $error = $this->db->error();
-            log_message('error', 'FAILED Entry 2 - Error Code: ' . $error['code'] . ' Message: ' . $error['message']);
-            return false;
-        }
-
-        log_message('debug', 'Entry 2 SUCCESS - Insert ID: ' . $this->db->insert_id());
-
-        // 3. KREDIT: PPN Keluaran (53)
-        if ($data['ppn_amount'] > 0 && $akun_ppn) {
-            $entry3 = [
-                'tanggal' => $data['invoice_date'],
-                'no_transaksi' => $data['no_invoice'],
-                'tipe' => 'OUT',
-                'akun_id' => $akun_ppn,
-                'nominal' => $data['ppn_amount'],
-                'debit' => 0,
-                'kredit' => $data['ppn_amount'],
-                'keterangan' => 'PPN Keluaran - Invoice ' . $data['no_invoice'],
-                'referensi_tipe' => 'Manual',
-                'referensi_id' => $invoice_id,
-                'created_at' => date('Y-m-d H:i:s'),
-                'created_by' => $created_by // ✅ FIXED
-            ];
-
-            log_message('debug', 'Inserting Entry 3 (PPN - Kode 53, ID ' . $akun_ppn . ')');
-
-            if (!$this->db->insert('tb_transaksi_keuangan', $entry3)) {
-                $error = $this->db->error();
-                log_message('error', 'FAILED Entry 3 - Error Code: ' . $error['code'] . ' Message: ' . $error['message']);
-                return false;
-            }
-
-            log_message('debug', 'Entry 3 SUCCESS - Insert ID: ' . $this->db->insert_id());
-        }
-
-        // 4. DEBIT: PPH 23 Dipotong (54)
-        if ($data['pph_amount'] > 0 && $akun_pph) {
-            $entry4 = [
+        // 1. DEBIT: Piutang Usaha
+        if (
+            !$this->db->insert('tb_transaksi_keuangan', [
                 'tanggal' => $data['invoice_date'],
                 'no_transaksi' => $data['no_invoice'],
                 'tipe' => 'IN',
-                'akun_id' => $akun_pph,
-                'nominal' => $data['pph_amount'],
-                'debit' => $data['pph_amount'],
+                'akun_id' => $akun_piutang,
+                'nominal' => $data['grand_total'],
+                'debit' => $data['grand_total'],
                 'kredit' => 0,
-                'keterangan' => 'PPH Dipotong - Invoice ' . $data['no_invoice'],
+                'keterangan' => 'Invoice TSC - ' . substr($data['customer_nama'], 0, 50),
                 'referensi_tipe' => 'Manual',
                 'referensi_id' => $invoice_id,
                 'created_at' => date('Y-m-d H:i:s'),
-                'created_by' => $created_by // ✅ FIXED
-            ];
+                'created_by' => $created_by
+            ])
+        ) {
+            return false;
+        }
 
-            log_message('debug', 'Inserting Entry 4 (PPH - Kode 54, ID ' . $akun_pph . ')');
+        // 2. KREDIT: Pendapatan
+        if (
+            !$this->db->insert('tb_transaksi_keuangan', [
+                'tanggal' => $data['invoice_date'],
+                'no_transaksi' => $data['no_invoice'],
+                'tipe' => 'OUT',
+                'akun_id' => $akun_pendapatan,
+                'nominal' => $data['subtotal'],
+                'debit' => 0,
+                'kredit' => $data['subtotal'],
+                'keterangan' => 'Pendapatan - Invoice ' . $data['no_invoice'],
+                'referensi_tipe' => 'Manual',
+                'referensi_id' => $invoice_id,
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $created_by
+            ])
+        ) {
+            return false;
+        }
 
-            if (!$this->db->insert('tb_transaksi_keuangan', $entry4)) {
-                $error = $this->db->error();
-                log_message('error', 'FAILED Entry 4 - Error Code: ' . $error['code'] . ' Message: ' . $error['message']);
+        // 3. KREDIT: PPN Keluaran
+        if ($data['ppn_amount'] > 0 && $akun_ppn) {
+            if (
+                !$this->db->insert('tb_transaksi_keuangan', [
+                    'tanggal' => $data['invoice_date'],
+                    'no_transaksi' => $data['no_invoice'],
+                    'tipe' => 'OUT',
+                    'akun_id' => $akun_ppn,
+                    'nominal' => $data['ppn_amount'],
+                    'debit' => 0,
+                    'kredit' => $data['ppn_amount'],
+                    'keterangan' => 'PPN Keluaran - Invoice ' . $data['no_invoice'],
+                    'referensi_tipe' => 'Manual',
+                    'referensi_id' => $invoice_id,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'created_by' => $created_by
+                ])
+            ) {
                 return false;
             }
+        }
 
-            log_message('debug', 'Entry 4 SUCCESS - Insert ID: ' . $this->db->insert_id());
+        // 4. DEBIT: PPH 23
+        if ($data['pph_amount'] > 0 && $akun_pph) {
+            if (
+                !$this->db->insert('tb_transaksi_keuangan', [
+                    'tanggal' => $data['invoice_date'],
+                    'no_transaksi' => $data['no_invoice'],
+                    'tipe' => 'IN',
+                    'akun_id' => $akun_pph,
+                    'nominal' => $data['pph_amount'],
+                    'debit' => $data['pph_amount'],
+                    'kredit' => 0,
+                    'keterangan' => 'PPH Dipotong - Invoice ' . $data['no_invoice'],
+                    'referensi_tipe' => 'Manual',
+                    'referensi_id' => $invoice_id,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'created_by' => $created_by
+                ])
+            ) {
+                return false;
+            }
         }
 
         log_message('debug', '=== CREATE ACCOUNTING ENTRIES COMPLETE ===');
@@ -502,6 +466,11 @@ class M_invoice_tsc extends CI_Model
 
     // ==================== READ ====================
 
+    /**
+     * Get all invoices dengan filter + pagination
+     * Mendukung filter 'overdue' selain status biasa
+     * customer_id bisa string tunggal ATAU array (multi-select)
+     */
     public function get_all($filters = [], $limit = null, $offset = null)
     {
         $this->db->select('i.*, c.nama as customer_nama_display')
@@ -509,9 +478,9 @@ class M_invoice_tsc extends CI_Model
             ->join('customer c', 'i.customer_id = c.kode', 'left')
             ->order_by('i.id', 'DESC');
 
-        if (!empty($filters['customer_id'])) {
-            $this->db->where('i.customer_id', $filters['customer_id']);
-        }
+        // ── Multi-select customer ──
+        $this->apply_customer_filter($filters['customer_id'] ?? null);
+
         if (!empty($filters['date_from'])) {
             $this->db->where('i.invoice_date >=', $filters['date_from']);
         }
@@ -519,7 +488,12 @@ class M_invoice_tsc extends CI_Model
             $this->db->where('i.invoice_date <=', $filters['date_to']);
         }
         if (!empty($filters['status'])) {
-            $this->db->where('i.status', $filters['status']);
+            if ($filters['status'] === 'overdue') {
+                $this->db->where_in('i.status', ['sent', 'draft', 'unsent']);
+                $this->db->where('i.due_date <', date('Y-m-d'));
+            } else {
+                $this->db->where('i.status', $filters['status']);
+            }
         }
         if (!empty($filters['keyword'])) {
             $this->db->group_start()
@@ -532,14 +506,12 @@ class M_invoice_tsc extends CI_Model
             $this->db->where('i.periode_shipment', $filters['periode_shipment']);
         }
 
-        // ✅ NEW: Apply limit & offset for pagination
         if ($limit !== null) {
             $this->db->limit($limit, $offset);
         }
 
         return $this->db->get()->result();
     }
-
 
     public function get_by_id($id)
     {
@@ -570,51 +542,29 @@ class M_invoice_tsc extends CI_Model
 
         log_message('debug', '=== UPDATE INVOICE START - ID: ' . $id . ' ===');
 
-        // Get old invoice data
         $old_invoice = $this->get_by_id($id);
-
         if (!$old_invoice) {
-            log_message('error', 'Invoice not found for update: ' . $id);
             $this->db->trans_rollback();
             return false;
         }
 
-        log_message('debug', 'Old invoice: ' . $old_invoice->no_invoice . ' | Grand Total: ' . $old_invoice->grand_total);
-        log_message('debug', 'New grand total: ' . $data['grand_total']);
-
-        // Update header
         $this->db->where('id', $id)->update('tb_invoice_tsc', $data);
-
-        // Delete old items
         $this->db->where('invoice_id', $id)->delete('tb_invoice_tsc_items');
 
-        // Insert new items
         foreach ($items as $index => $item) {
             $item['invoice_id'] = $id;
             $item['sort_order'] = $index + 1;
             $this->db->insert('tb_invoice_tsc_items', $item);
         }
 
-        // Update piutang
         $this->update_piutang($id, $data);
 
-        // 🔥 FIX: UPDATE JURNAL AKUNTANSI
-        log_message('debug', 'Deleting old journal entries...');
-
-        // Delete old journal entries
         $this->db->where('referensi_id', $id)
             ->where('referensi_tipe', 'Manual')
             ->delete('tb_transaksi_keuangan');
 
-        $deleted = $this->db->affected_rows();
-        log_message('debug', 'Deleted ' . $deleted . ' old journal entries');
-
-        // Recreate journal with new amounts
-        log_message('debug', 'Creating new journal entries...');
         $journal_result = $this->create_accounting_entries($data, $id);
-
         if (!$journal_result) {
-            log_message('error', 'Failed to create new journal entries');
             $this->db->trans_rollback();
             return false;
         }
@@ -622,7 +572,6 @@ class M_invoice_tsc extends CI_Model
         $this->db->trans_complete();
 
         if ($this->db->trans_status() === FALSE) {
-            log_message('error', 'Transaction FAILED for update invoice ID: ' . $id);
             return false;
         }
 
@@ -638,22 +587,17 @@ class M_invoice_tsc extends CI_Model
         if ($piutang) {
             $outstanding_diff = $data['grand_total'] - $piutang->nominal;
 
-            $update = [
+            $this->db->where('invoice_id', $invoice_id)->update('tb_piutang_usaha', [
                 'no_invoice' => $data['no_invoice'],
                 'invoice_date' => $data['invoice_date'],
                 'due_date' => $data['due_date'],
                 'nominal' => $data['grand_total'],
                 'outstanding' => $piutang->outstanding + $outstanding_diff
-            ];
-
-            $this->db->where('invoice_id', $invoice_id)
-                ->update('tb_piutang_usaha', $update);
+            ]);
         }
     }
 
     // ==================== DELETE ====================
-
-    // ==================== DELETE - FIXED ====================
 
     public function delete_invoice($id)
     {
@@ -661,58 +605,39 @@ class M_invoice_tsc extends CI_Model
 
         log_message('debug', '=== DELETE INVOICE START - ID: ' . $id . ' ===');
 
-        // Get invoice data first
         $invoice = $this->get_by_id($id);
         if (!$invoice) {
-            log_message('error', 'Invoice not found: ID ' . $id);
             $this->db->trans_rollback();
             return false;
         }
 
-        log_message('debug', 'Deleting invoice: ' . $invoice->no_invoice . ' | Status: ' . $invoice->status);
-
-        // 1. ✅ DELETE JURNAL AKUNTANSI (tb_transaksi_keuangan) - INI YANG PENTING!
-        // Hapus jurnal invoice (saat create)
+        // 1. Hapus jurnal invoice
         $this->db->where('referensi_id', $id)
             ->where('referensi_tipe', 'Manual')
             ->delete('tb_transaksi_keuangan');
 
-        log_message('debug', 'Jurnal deleted (Manual): ' . $this->db->affected_rows() . ' rows');
-
-        // Hapus jurnal pembayaran (kalau invoice pernah paid)
+        // 2. Hapus jurnal pembayaran kalau pernah paid
         if ($invoice->status == 'paid') {
-            $this->db->where('referensi_id', $id)
+            $this->db->where('referensi_id', $id )
                 ->where('referensi_tipe', 'Pembayaran_Invoice')
                 ->delete('tb_transaksi_keuangan');
-
-            log_message('debug', 'Jurnal deleted (Pembayaran): ' . $this->db->affected_rows() . ' rows');
         }
 
-        // 2. Delete PIUTANG USAHA
+        // 3. Hapus piutang
         $piutang = $this->db->where('invoice_id', $id)->get('tb_piutang_usaha')->row();
-
-        if ($piutang) {
-            // Hapus jika belum ada pembayaran ATAU invoice paid (superadmin force delete)
-            if ($piutang->paid_amount == 0 || $invoice->status == 'paid') {
-                $this->db->where('invoice_id', $id)->delete('tb_piutang_usaha');
-                log_message('debug', 'Piutang deleted');
-            } else {
-                log_message('warning', 'Piutang NOT deleted - has partial payment');
-            }
+        if ($piutang && ($piutang->paid_amount == 0 || $invoice->status == 'paid')) {
+            $this->db->where('invoice_id', $id)->delete('tb_piutang_usaha');
         }
 
-        // 3. Delete INVOICE ITEMS (cascade)
+        // 4. Hapus items
         $this->db->where('invoice_id', $id)->delete('tb_invoice_tsc_items');
-        log_message('debug', 'Invoice items deleted: ' . $this->db->affected_rows() . ' rows');
 
-        // 4. Delete INVOICE HEADER
+        // 5. Hapus header
         $this->db->where('id', $id)->delete('tb_invoice_tsc');
-        log_message('debug', 'Invoice header deleted');
 
         $this->db->trans_complete();
 
         if ($this->db->trans_status() === FALSE) {
-            log_message('error', 'Transaction FAILED for delete invoice ID: ' . $id);
             return false;
         }
 
@@ -731,49 +656,39 @@ class M_invoice_tsc extends CI_Model
             return false;
         }
 
-        // Update invoice status
         $this->db->where('id', $id)->update('tb_invoice_tsc', [
             'status' => 'paid',
             'paid_date' => date('Y-m-d')
         ]);
 
-        // Update piutang
         $this->db->where('invoice_id', $id)->update('tb_piutang_usaha', [
             'status' => 'paid',
             'paid_amount' => $invoice->grand_total,
             'outstanding' => 0
         ]);
 
-        // Create payment accounting entries
         $this->create_payment_entries($invoice);
 
         $this->db->trans_complete();
-
         return $this->db->trans_status();
     }
 
     private function create_payment_entries($invoice)
     {
-        log_message('debug', '=== CREATE PAYMENT ENTRIES START ===');
-
-        // ✅ FIXED: Get current user
         $created_by = $this->get_current_user();
-
-        // 🔥 GET AKUN IDs BY KODE PERKIRAAN (DYNAMIC MAPPING)
-        $akun_bank = $this->get_akun_id_by_kode('10');        // Bank
-        $akun_piutang = $this->get_akun_id_by_kode('60');    // Piutang Usaha
+        $akun_bank = $this->get_akun_id_by_kode('10');
+        $akun_piutang = $this->get_akun_id_by_kode('60');
 
         if (!$akun_bank || !$akun_piutang) {
-            log_message('error', 'Required akun not found for payment! Bank: ' . $akun_bank . ', Piutang: ' . $akun_piutang);
             return false;
         }
 
-        // 1. DEBIT: Bank (10)
+        // 1. DEBIT: Bank
         $this->db->insert('tb_transaksi_keuangan', [
             'tanggal' => date('Y-m-d'),
             'no_transaksi' => 'PAYMENT-' . $invoice->no_invoice,
             'tipe' => 'IN',
-            'akun_id' => $akun_bank,  // 🔥 DYNAMIC!
+            'akun_id' => $akun_bank,
             'nominal' => $invoice->grand_total,
             'debit' => $invoice->grand_total,
             'kredit' => 0,
@@ -781,17 +696,15 @@ class M_invoice_tsc extends CI_Model
             'referensi_tipe' => 'Pembayaran_Invoice',
             'referensi_id' => $invoice->id,
             'created_at' => date('Y-m-d H:i:s'),
-            'created_by' => $created_by // ✅ FIXED
+            'created_by' => $created_by
         ]);
 
-        log_message('debug', 'Payment Entry 1 (Bank - Kode 10, ID ' . $akun_bank . ') - Insert ID: ' . $this->db->insert_id());
-
-        // 2. KREDIT: Piutang Usaha (60)
+        // 2. KREDIT: Piutang Usaha
         $this->db->insert('tb_transaksi_keuangan', [
             'tanggal' => date('Y-m-d'),
             'no_transaksi' => 'PAYMENT-' . $invoice->no_invoice,
             'tipe' => 'OUT',
-            'akun_id' => $akun_piutang,  // 🔥 DYNAMIC!
+            'akun_id' => $akun_piutang,
             'nominal' => $invoice->grand_total,
             'debit' => 0,
             'kredit' => $invoice->grand_total,
@@ -799,11 +712,8 @@ class M_invoice_tsc extends CI_Model
             'referensi_tipe' => 'Pembayaran_Invoice',
             'referensi_id' => $invoice->id,
             'created_at' => date('Y-m-d H:i:s'),
-            'created_by' => $created_by // ✅ FIXED
+            'created_by' => $created_by
         ]);
-
-        log_message('debug', 'Payment Entry 2 (Piutang - Kode 60, ID ' . $akun_piutang . ') - Insert ID: ' . $this->db->insert_id());
-        log_message('debug', '=== CREATE PAYMENT ENTRIES COMPLETE ===');
 
         return true;
     }
@@ -812,7 +722,7 @@ class M_invoice_tsc extends CI_Model
 
     public function get_summary()
     {
-        $result = $this->db->select('
+        return $this->db->select('
             COUNT(*) as total_invoice,
             SUM(CASE WHEN status = "draft" THEN 1 ELSE 0 END) as draft,
             SUM(CASE WHEN status = "sent" THEN 1 ELSE 0 END) as sent,
@@ -821,8 +731,17 @@ class M_invoice_tsc extends CI_Model
             SUM(grand_total) as total_amount,
             SUM(CASE WHEN status != "paid" AND status != "cancelled" THEN grand_total ELSE 0 END) as outstanding_amount
         ')->get('tb_invoice_tsc')->row();
+    }
 
-        return $result;
+    /**
+     * Hitung jumlah invoice overdue (untuk summary card)
+     */
+    public function count_overdue()
+    {
+        return $this->db->from('tb_invoice_tsc')
+            ->where_in('status', ['sent', 'draft', 'unsent'])
+            ->where('due_date <', date('Y-m-d'))
+            ->count_all_results();
     }
 
     public function get_outstanding_by_customer()
@@ -845,8 +764,7 @@ class M_invoice_tsc extends CI_Model
 
     public function get_customer_data($customer_id)
     {
-        return $this->db->where('kode', $customer_id)
-            ->get('customer')->row();
+        return $this->db->where('kode', $customer_id)->get('customer')->row();
     }
 
     public function get_all_customers()
@@ -860,23 +778,22 @@ class M_invoice_tsc extends CI_Model
 
     public function get_piutang($invoice_id)
     {
-        return $this->db->where('invoice_id', $invoice_id)
-            ->get('tb_piutang_usaha')->row();
+        return $this->db->where('invoice_id', $invoice_id)->get('tb_piutang_usaha')->row();
     }
 
     public function update_aging()
     {
-        $sql = "UPDATE tb_piutang_usaha 
-                SET aging_days = DATEDIFF(CURDATE(), due_date),
-                    status = CASE 
-                        WHEN paid_amount >= nominal THEN 'paid'
-                        WHEN paid_amount > 0 THEN 'partial'
-                        WHEN DATEDIFF(CURDATE(), due_date) > 0 THEN 'overdue'
-                        ELSE 'outstanding'
-                    END
-                WHERE status != 'paid'";
-
-        return $this->db->query($sql);
+        return $this->db->query("
+            UPDATE tb_piutang_usaha
+            SET aging_days = DATEDIFF(CURDATE(), due_date),
+                status = CASE
+                    WHEN paid_amount >= nominal THEN 'paid'
+                    WHEN paid_amount > 0 THEN 'partial'
+                    WHEN DATEDIFF(CURDATE(), due_date) > 0 THEN 'overdue'
+                    ELSE 'outstanding'
+                END
+            WHERE status != 'paid'
+        ");
     }
 
     // ==================== HELPER ====================
@@ -890,18 +807,13 @@ class M_invoice_tsc extends CI_Model
         return $this->db->get('tb_invoice_tsc')->row();
     }
 
-    // update status
-
     public function update_status($id, $status)
     {
-        // ✅ Special handling for CANCELLED status
         if ($status == 'cancelled') {
             return $this->cancel_invoice($id);
         }
 
-        // For other statuses (sent, draft)
         $data = ['status' => $status];
-
         if ($status == 'paid') {
             $data['paid_date'] = date('Y-m-d');
         }
@@ -911,12 +823,6 @@ class M_invoice_tsc extends CI_Model
 
     // ==================== CUSTOMER INVOICES ====================
 
-    /**
-     * Get invoices by customer
-     * @param string $customer_id
-     * @param int $limit (optional)
-     * @return array
-     */
     public function get_by_customer($customer_id, $limit = null)
     {
         $this->db->select('*')
@@ -931,26 +837,102 @@ class M_invoice_tsc extends CI_Model
         return $this->db->get()->result();
     }
 
-    /**
-     * Get customer invoice statistics
-     * @param string $customer_id
-     * @return object
-     */
     public function get_customer_stats($customer_id)
     {
-        $result = $this->db->select('
-        COUNT(*) as total_invoice,
-        SUM(CASE WHEN status = "paid" THEN 1 ELSE 0 END) as paid_count,
-        SUM(CASE WHEN status != "paid" AND status != "cancelled" THEN 1 ELSE 0 END) as outstanding_count,
-        SUM(grand_total) as total_amount,
-        SUM(CASE WHEN status = "paid" THEN grand_total ELSE 0 END) as paid_amount,
-        SUM(CASE WHEN status != "paid" AND status != "cancelled" THEN grand_total ELSE 0 END) as outstanding_amount
-    ')
+        return $this->db->select('
+            COUNT(*) as total_invoice,
+            SUM(CASE WHEN status = "paid" THEN 1 ELSE 0 END) as paid_count,
+            SUM(CASE WHEN status != "paid" AND status != "cancelled" THEN 1 ELSE 0 END) as outstanding_count,
+            SUM(grand_total) as total_amount,
+            SUM(CASE WHEN status = "paid" THEN grand_total ELSE 0 END) as paid_amount,
+            SUM(CASE WHEN status != "paid" AND status != "cancelled" THEN grand_total ELSE 0 END) as outstanding_amount
+        ')
             ->from('tb_invoice_tsc')
             ->where('customer_id', $customer_id)
-            ->get()
-            ->row();
-
-        return $result;
+            ->get()->row();
     }
+
+    // ── Aging summary (total per bucket) ──
+    public function get_aging_summary()
+    {
+        return $this->db->query("
+            SELECT
+                SUM(CASE WHEN DATEDIFF(CURDATE(), due_date) <= 0 THEN outstanding ELSE 0 END) as current_amount,
+                SUM(CASE WHEN DATEDIFF(CURDATE(), due_date) BETWEEN 1 AND 14 THEN outstanding ELSE 0 END) as bucket_1_14,
+                SUM(CASE WHEN DATEDIFF(CURDATE(), due_date) BETWEEN 15 AND 30 THEN outstanding ELSE 0 END) as bucket_15_30,
+                SUM(CASE WHEN DATEDIFF(CURDATE(), due_date) > 30 THEN outstanding ELSE 0 END) as bucket_30plus,
+                SUM(outstanding) as total_outstanding,
+                COUNT(*) as total_invoice,
+                COUNT(DISTINCT customer_id) as total_customer
+            FROM tb_piutang_usaha
+            WHERE status NOT IN ('paid', 'cancelled')
+            AND outstanding > 0
+        ")->row();
+    }
+
+    // ── Aging per customer ──
+    public function get_aging_per_customer()
+    {
+        return $this->db->query("
+            SELECT
+                p.customer_id,
+                c.nama as customer_nama,
+                COUNT(*) as invoice_count,
+                SUM(p.outstanding) as total_outstanding,
+                SUM(CASE WHEN DATEDIFF(CURDATE(), p.due_date) <= 0 THEN p.outstanding ELSE 0 END) as current_amount,
+                SUM(CASE WHEN DATEDIFF(CURDATE(), p.due_date) BETWEEN 1 AND 14 THEN p.outstanding ELSE 0 END) as bucket_1_14,
+                SUM(CASE WHEN DATEDIFF(CURDATE(), p.due_date) BETWEEN 15 AND 30 THEN p.outstanding ELSE 0 END) as bucket_15_30,
+                SUM(CASE WHEN DATEDIFF(CURDATE(), p.due_date) > 30 THEN p.outstanding ELSE 0 END) as bucket_30plus,
+                MAX(DATEDIFF(CURDATE(), p.due_date)) as max_overdue_days
+            FROM tb_piutang_usaha p
+            LEFT JOIN customer c ON p.customer_id = c.kode
+            WHERE p.status NOT IN ('paid', 'cancelled')
+            AND p.outstanding > 0
+            GROUP BY p.customer_id, c.nama
+            ORDER BY total_outstanding DESC
+        ")->result();
+    }
+
+    // ── Aging detail semua invoice outstanding ──
+    public function get_aging_detail()
+    {
+        return $this->db->query("
+            SELECT
+                p.*,
+                c.nama as customer_nama,
+                i.no_invoice,
+                i.no_faktur,
+                i.status as invoice_status,
+                DATEDIFF(CURDATE(), p.due_date) as overdue_days,
+                CASE
+                    WHEN DATEDIFF(CURDATE(), p.due_date) <= 0 THEN 'current'
+                    WHEN DATEDIFF(CURDATE(), p.due_date) BETWEEN 1 AND 14 THEN '1-14'
+                    WHEN DATEDIFF(CURDATE(), p.due_date) BETWEEN 15 AND 30 THEN '15-30'
+                    ELSE '30+'
+                END as aging_bucket
+            FROM tb_piutang_usaha p
+            LEFT JOIN customer c ON p.customer_id = c.kode
+            LEFT JOIN tb_invoice_tsc i ON p.invoice_id = i.id
+            WHERE p.status NOT IN ('paid', 'cancelled')
+            AND p.outstanding > 0
+            ORDER BY overdue_days DESC, p.outstanding DESC
+        ")->result();
+    }
+
+    public function bulk_update_status($ids, $status)
+    {
+        if (empty($ids))
+            return false;
+
+        $ids = array_map('intval', $ids);
+        $data = ['status' => $status, 'updated_at' => date('Y-m-d H:i:s')];
+
+        if ($status === 'paid') {
+            $data['paid_date'] = date('Y-m-d');
+        }
+
+        $this->db->where_in('id', $ids)->update('tb_invoice_tsc', $data);
+        return $this->db->affected_rows();
+    }
+
 } // End of M_invoice_tsc class

@@ -151,6 +151,9 @@ $level_text = [
                     <a class="dropdown-item py-2" href="#" data-bs-toggle="modal" data-bs-target="#changeProfileModal">
                         <i class="fas fa-user-circle me-2 text-muted"></i> Ubah Foto Profil
                     </a>
+                    <a class="dropdown-item py-2" href="<?= base_url('profil') ?>">
+                        <i class="fas fa-id-badge me-2 text-muted"></i> Lihat Profil
+                    </a>
                     <div class="dropdown-divider m-0"></div>
                     <a class="dropdown-item py-2" href="#" id="logoutBtn">
                         <i class="fas fa-sign-out-alt me-2 text-muted"></i> Logout
@@ -179,7 +182,15 @@ $level_text = [
                     <li class="nav-item">
                         <a class="nav-link <?= $aktif == 'absensi' ? 'active' : '' ?>" href="<?= base_url('absensi') ?>">
                             <span class="nav-link-icon"><i class="fas fa-camera text-success"></i></span>
-                            <span class="nav-link-title">Absensi</span>
+                            <span class="nav-link-title">
+                                Absensi
+                                <?php if ($level === 'superadmin'): ?>
+                                    <span class="badge bg-danger ms-1"
+                                        id="navAbsensiBadge"
+                                        style="display:none;font-size:.6rem;"
+                                        title="Karyawan belum absen">0</span>
+                                <?php endif ?>
+                            </span>
                         </a>
                     </li>
                 <?php endif ?>
@@ -500,6 +511,22 @@ $level_text = [
                                     href="<?= base_url('analytics/weekly') ?>">
                                     <i class="fas fa-file-alt me-2 text-warning"></i> Laporan Mingguan
                                 </a>
+                                <a class="dropdown-item <?= $aktif == 'vendor_performance' ? 'active' : '' ?>"
+                                    href="<?= base_url('vendor_performance') ?>">
+                                    <i class="fas fa-truck-loading me-2 text-info"></i> Vendor Performance
+                                </a>
+                                <a class="dropdown-item <?= $aktif == 'rute_profitability' ? 'active' : '' ?>"
+                                    href="<?= base_url('rute_profitability') ?>">
+                                    <i class="fas fa-route me-2 text-success"></i> Rute Profitability
+                                </a>
+                                <a class="dropdown-item <?= $aktif == 'customer_pnl' ? 'active' : '' ?>"
+                                    href="<?= base_url('customer_pnl') ?>">
+                                    <i class="fas fa-file-invoice-dollar me-2 text-success"></i> P&L per Customer
+                                </a>
+                                <a class="dropdown-item <?= $aktif == 'data_quality' ? 'active' : '' ?>"
+                                    href="<?= base_url('data_quality') ?>">
+                                    <i class="fas fa-database me-2 text-primary"></i> Data Quality
+                                </a>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item <?= $aktif == 'prediction' ? 'active' : '' ?>"
                                     href="<?= base_url('prediction') ?>">
@@ -507,11 +534,16 @@ $level_text = [
                                 </a>
                                 <div class="dropdown-divider"></div>
                             <?php endif ?>
-
+                            
+                            <a class="dropdown-item <?= $aktif == 'customer_health' ? 'active' : '' ?>"
+                            href="<?= base_url('customer_health') ?>">
+                                <i class="fas fa-heartbeat me-2 text-danger"></i> Customer Health
+                            </a>
                             <a class="dropdown-item <?= $aktif == 'feedback' ? 'active' : '' ?>"
                                 href="<?= base_url('feedback') ?>">
                                 <i class="fas fa-search me-2 text-warning"></i> Feedback SPX
                             </a>
+
 
                             <?php if (in_array($level, ['superadmin', 'finance_staff'])): ?>
                                 <div class="dropdown-divider"></div>
@@ -573,10 +605,10 @@ $level_text = [
 <div class="modal fade" id="changeProfileModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title"><i class="fas fa-user-circle me-2"></i> Ubah Foto Profil</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
+            
+            <a class="dropdown-item py-2" href="#" data-bs-toggle="modal" data-bs-target="#changeProfileModal">
+                <i class="fas fa-user-circle me-2 text-muted"></i> Ubah Foto Profil
+            </a>
             <form id="form-change-profile">
                 <div class="modal-body">
                     <p class="text-center text-muted mb-3">Pilih foto profil Anda:</p>

@@ -60,27 +60,35 @@ class M_ftl_non_spx extends CI_Model
         return ['is_new' => true, 'driver_id' => (int) $new_id];
     }
 
-    public function get_sla_summary()
+    public function get_sla_summary($date_from = null, $date_to = null)
     {
+        $where = 'deleted_at IS NULL
+        AND actual_tiba_bongkar_date IS NOT NULL
+        AND target_arrival_date IS NOT NULL';
+
+        if (!empty($date_from) && !empty($date_to)) {
+            $df = $this->db->escape_str($date_from);
+            $dt = $this->db->escape_str($date_to);
+            $where .= " AND actual_tiba_bongkar_date BETWEEN '{$df}' AND '{$dt}'";
+        }
+
         $this->db->select("
-            COUNT(*) as total_completed,
-            SUM(CASE
-                WHEN actual_tiba_bongkar_date <= target_arrival_date
-                AND (actual_tiba_bongkar_time <= target_arrival_time OR target_arrival_time IS NULL)
-                THEN 1 ELSE 0 END) as ontime,
-            SUM(CASE
-                WHEN actual_tiba_bongkar_date > target_arrival_date
-                OR (actual_tiba_bongkar_date = target_arrival_date AND actual_tiba_bongkar_time > target_arrival_time)
-                THEN 1 ELSE 0 END) as late,
-            AVG(TIMESTAMPDIFF(MINUTE,
-                CONCAT(actual_depart_date, ' ', IFNULL(actual_depart_time, '00:00')),
-                CONCAT(actual_tiba_bongkar_date, ' ', IFNULL(actual_tiba_bongkar_time, '00:00'))
-            )) as avg_transit_minutes
-        ", false);
+        COUNT(*) as total_completed,
+        SUM(CASE
+            WHEN actual_tiba_bongkar_date <= target_arrival_date
+            AND (actual_tiba_bongkar_time <= target_arrival_time OR target_arrival_time IS NULL)
+            THEN 1 ELSE 0 END) as ontime,
+        SUM(CASE
+            WHEN actual_tiba_bongkar_date > target_arrival_date
+            OR (actual_tiba_bongkar_date = target_arrival_date AND actual_tiba_bongkar_time > target_arrival_time)
+            THEN 1 ELSE 0 END) as late,
+        AVG(TIMESTAMPDIFF(MINUTE,
+            CONCAT(actual_depart_date, ' ', IFNULL(actual_depart_time, '00:00')),
+            CONCAT(actual_tiba_bongkar_date, ' ', IFNULL(actual_tiba_bongkar_time, '00:00'))
+        )) as avg_transit_minutes
+    ", false);
         $this->db->from($this->table);
-        $this->db->where('deleted_at IS NULL', null, false);
-        $this->db->where('actual_tiba_bongkar_date IS NOT NULL', null, false);
-        $this->db->where('target_arrival_date IS NOT NULL', null, false);
+        $this->db->where($where, null, false);
         return $this->db->get()->row();
     }
 
@@ -258,8 +266,21 @@ class M_ftl_non_spx extends CI_Model
     // ============================================
     // STATISTICS DASHBOARD
     // ============================================
-    public function get_statistics()
+    public function get_statistics($date_from = null, $date_to = null)
     {
+        // Status aktif: TIDAK difilter periode
+        // Completed & Cancelled: difilter by updated_at/actual_done_at
+        $period_cond = '';
+        if (!empty($date_from) && !empty($date_to)) {
+            $df = $this->db->escape_str($date_from);
+            $dt = $this->db->escape_str($date_to);
+            $period_cond = "AND (
+            (status_shipment NOT IN ('Completed','Cancelled'))
+            OR (status_shipment = 'Completed'  AND DATE(actual_done_at) BETWEEN '{$df}' AND '{$dt}')
+            OR (status_shipment = 'Cancelled'  AND DATE(updated_at)     BETWEEN '{$df}' AND '{$dt}')
+        )";
+        }
+
         $query = $this->db->query("
         SELECT
             COUNT(*) AS total,
@@ -273,6 +294,7 @@ class M_ftl_non_spx extends CI_Model
             SUM(deleted_at IS NULL AND status_shipment = 'Cancelled')              AS cancelled
         FROM ftl_non_spx
         WHERE deleted_at IS NULL
+        {$period_cond}
     ");
 
         $row = $query->row_array();

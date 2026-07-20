@@ -129,22 +129,22 @@ $route['unit_maintenance/proses_tambah'] = 'UnitMaintenance/proses_tambah';
 $route['unit_maintenance/proses_ubah/(:num)'] = 'UnitMaintenance/proses_ubah/$1';
 $route['unit_maintenance/hapus/(:num)'] = 'UnitMaintenance/hapus/$1';
 
-$route['driver_keluhan']          = 'driver_keluhan/index';
-$route['driver_keluhan/submit']   = 'driver_keluhan/submit';
-$route['driver_keluhan/admin']    = 'driver_keluhan/admin';
+$route['driver_keluhan'] = 'driver_keluhan/index';
+$route['driver_keluhan/submit'] = 'driver_keluhan/submit';
+$route['driver_keluhan/admin'] = 'driver_keluhan/admin';
 $route['driver_keluhan/detail/(:num)'] = 'driver_keluhan/detail/$1';
 $route['driver_keluhan/update_status/(:num)'] = 'driver_keluhan/update_status/$1';
 $route['driver_keluhan/export'] = 'driver_keluhan/export';
 $route['driver_keluhan/hapus/(:num)'] = 'driver_keluhan/hapus/$1';
 
 
-$route['notifikasi/get']       = 'notifikasi/get';
+$route['notifikasi/get'] = 'notifikasi/get';
 $route['notifikasi/mark_read'] = 'notifikasi/mark_read';
 
 // ── Support Ticket ──────────────────────────────────────────
-$route['ticket']                      = 'ticket/index';
-$route['ticket/buat']                 = 'ticket/buat';
-$route['ticket/detail/(:num)']        = 'ticket/detail/$1';
+$route['ticket'] = 'ticket/index';
+$route['ticket/buat'] = 'ticket/buat';
+$route['ticket/detail/(:num)'] = 'ticket/detail/$1';
 $route['ticket/update_status/(:num)'] = 'ticket/update_status/$1';
 
 $route['jadwal_kerja'] = 'JadwalKerja/index';
@@ -164,53 +164,68 @@ $route['rfid_cards/hapus/(:num)'] = 'RfidCards/hapus/$1';
 $route['rfid_cards/toggle/(:num)'] = 'RfidCards/toggle/$1';
 $route['absensi/rfid_submit'] = 'absensi/rfid_submit';
 
-$route['rfid_cards/pending']       = 'RfidCards/pending';
+$route['rfid_cards/pending'] = 'RfidCards/pending';
 $route['rfid_cards/check_pending'] = 'RfidCards/check_pending';
-$route['rfid_cards/assign']        = 'RfidCards/assign';
+$route['rfid_cards/assign'] = 'RfidCards/assign';
 $route['rfid_cards/hapus_pending/(:any)'] = 'RfidCards/hapus_pending/$1';
 
 // Register Karyawan — public
-$route['register']           = 'registerkaryawan/index';
-$route['register/proses']    = 'registerkaryawan/proses';
-$route['register/sukses']    = 'registerkaryawan/sukses';
- 
+$route['register'] = 'registerkaryawan/index';
+$route['register/proses'] = 'registerkaryawan/proses';
+$route['register/sukses'] = 'registerkaryawan/sukses';
+
 // Register Karyawan — admin (superadmin only)
-$route['register/pending']   = 'registerkaryawan/pending';
+$route['register/pending'] = 'registerkaryawan/pending';
 $route['register/list_ajax'] = 'registerkaryawan/list_ajax';
-$route['register/approve']   = 'registerkaryawan/approve';
-$route['register/reject']    = 'registerkaryawan/reject';
-$route['register/hapus']     = 'registerkaryawan/hapus';
+$route['register/approve'] = 'registerkaryawan/approve';
+$route['register/reject'] = 'registerkaryawan/reject';
+$route['register/hapus'] = 'registerkaryawan/hapus';
 
 //Broadcast
-$route['broadcast']                  = 'broadcast/index';
-$route['broadcast/get_json/(:num)']  = 'broadcast/get_json/$1';
-$route['broadcast/store']            = 'broadcast/store';
-$route['broadcast/update/(:num)']    = 'broadcast/update/$1';
-$route['broadcast/delete/(:num)']    = 'broadcast/delete/$1';
-$route['broadcast/toggle/(:num)']    = 'broadcast/toggle/$1';
-$route['broadcast/get_banner']       = 'broadcast/get_banner';
-$route['broadcast/dismiss/(:num)']   = 'broadcast/dismiss/$1';
-$route['broadcast/dismiss_all']      = 'broadcast/dismiss_all';
-$route['broadcast/count']            = 'broadcast/count';
+$route['broadcast'] = 'broadcast/index';
+$route['broadcast/get_json/(:num)'] = 'broadcast/get_json/$1';
+$route['broadcast/store'] = 'broadcast/store';
+$route['broadcast/update/(:num)'] = 'broadcast/update/$1';
+$route['broadcast/delete/(:num)'] = 'broadcast/delete/$1';
+$route['broadcast/toggle/(:num)'] = 'broadcast/toggle/$1';
+$route['broadcast/get_banner'] = 'broadcast/get_banner';
+$route['broadcast/dismiss/(:num)'] = 'broadcast/dismiss/$1';
+$route['broadcast/dismiss_all'] = 'broadcast/dismiss_all';
+$route['broadcast/count'] = 'broadcast/count';
 
-$route['absensi/laporan_data'] = 'absensi/laporan_data'; 
+$route['absensi/laporan_data'] = 'absensi/laporan_data';
 
 // Org Chart
-$route['org_chart']                = 'OrgChart/index';
-$route['org_chart/manage']         = 'OrgChart/manage';
-$route['org_chart/tambah']         = 'OrgChart/tambah';
-$route['org_chart/ubah/(:num)']    = 'OrgChart/ubah/$1';
-$route['org_chart/hapus/(:num)']   = 'OrgChart/hapus/$1';
+$route['org_chart'] = 'OrgChart/index';
+$route['org_chart/manage'] = 'OrgChart/manage';
+$route['org_chart/tambah'] = 'OrgChart/tambah';
+$route['org_chart/ubah/(:num)'] = 'OrgChart/ubah/$1';
+$route['org_chart/hapus/(:num)'] = 'OrgChart/hapus/$1';
 $route['org_chart/set_visibility'] = 'OrgChart/set_visibility';
-$route['org_chart/get_tree']       = 'OrgChart/get_tree';
+$route['org_chart/get_tree'] = 'OrgChart/get_tree';
 
 //analytics
-$route['analytics']           = 'Analytics/index';
-$route['analytics/import']    = 'Analytics/import';
+$route['analytics'] = 'Analytics/index';
+$route['analytics/import'] = 'Analytics/import';
 $route['analytics/do_import'] = 'Analytics/do_import';
-$route['analytics/export']    = 'Analytics/export';
+$route['analytics/export'] = 'Analytics/export';
 
 // API — RFID (no session required)
-$route['api/rfid_submit']  = 'Api/rfid_submit';
+$route['api/rfid_submit'] = 'Api/rfid_submit';
 $route['api/pending_card'] = 'Api/pending_card';
- 
+
+//customer health
+$route['customer_health'] = 'Customer_Health/index';
+$route['customer_health/detail/(:any)'] = 'Customer_Health/detail/$1';
+$route['customer_health/export'] = 'Customer_Health/export';
+$route['customer_health/ajax_trend'] = 'Customer_Health/ajax_trend';
+
+// ── Data Quality Tracker ──────────────────────────────────────
+$route['data_quality'] = 'Data_quality/index';
+$route['data_quality/export'] = 'Data_quality/export';
+$route['data_quality/ajax_periode'] = 'Data_quality/ajax_periode';
+
+// ── Vendor Performance Score ──────────────────────────────────
+$route['vendor_performance'] = 'Vendor_performance/index';
+$route['vendor_performance/detail/(:any)'] = 'Vendor_performance/detail/$1';
+$route['vendor_performance/export'] = 'Vendor_performance/export';

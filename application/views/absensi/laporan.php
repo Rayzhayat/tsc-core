@@ -1,9 +1,14 @@
+<!-- laporan.php -->
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <?php $this->load->view('partials/head') ?>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"
+        rel="stylesheet" />
     <style>
         .filter-card {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -16,6 +21,10 @@
             background-color: rgba(255, 255, 255, 0.9);
             color: #333;
             border: none;
+        }
+
+        .filter-card select[multiple] {
+            min-height: 68px;
         }
 
         .record-photo {
@@ -122,6 +131,43 @@
         /* Cursor pointer di header kolom yang bisa di-sort */
         #dataTable thead th:not(.no-sort) {
             cursor: pointer;
+        }
+
+        /* Select2 custom styling — menyatu dengan filter-card ungu */
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple {
+            min-height: 31px;
+            font-size: .84rem;
+            background-color: rgba(255, 255, 255, 0.9);
+            border: none;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered {
+            padding: 0 4px;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
+            background-color: #764ba2;
+            border-color: #5f3d84;
+            color: #fff;
+            font-size: .72rem;
+            padding: 0 6px;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove {
+            color: rgba(255, 255, 255, .7);
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove:hover {
+            color: #fff;
+        }
+
+        .active-filter-badge {
+            font-size: .68rem;
+            padding: 2px 7px;
         }
     </style>
 </head>
@@ -262,6 +308,9 @@
                                     <strong><?= date('d M Y', strtotime($start_date)) ?> s/d
                                         <?= date('d M Y', strtotime($end_date)) ?></strong>
                                     — dihitung dari absen IN
+                                    <?php if (!empty($selected_groups)): ?>
+                                        | Group: <strong><?= implode(', ', $selected_groups) ?></strong>
+                                    <?php endif ?>
                                 </div>
                                 <div class="chart-container">
                                     <canvas id="attendanceChart"></canvas>
@@ -363,19 +412,40 @@
                                                 OUT</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-2">
-                                        <label class="text-white small"><i class="fas fa-layer-group"></i> Group</label>
-                                        <select name="group" class="form-control form-control-sm" id="filterGroup"
-                                            <?= ($locked_group && count($allowed_groups ?? []) <= 1) ? 'disabled' : '' ?>>
-                                            <option value="">-- Semua Group --</option>
-                                            <?php
-                                            $all_groups = ['Yamazaki Staff', 'Admin TSC', 'Operasional TSC', 'TSF Staff', 'Sinar Boga Staff', 'Rorotan Staff'];
-                                            $show_groups = ($allowed_groups === null) ? $all_groups : $allowed_groups;
-                                            foreach ($show_groups as $g):
-                                                ?>
-                                                <option value="<?= $g ?>" <?= ($selected_group ?? '') == $g ? 'selected' : '' ?>><?= $g ?></option>
+                                    <div class="col-md-3">
+                                        <label class="text-white small">
+                                            <i class="fas fa-layer-group"></i> Group
+                                            <?php if (!empty($selected_groups)): ?>
+                                                <span class="badge bg-light text-dark active-filter-badge ms-1">
+                                                    <?= count($selected_groups) ?> dipilih
+                                                </span>
+                                            <?php endif ?>
+                                        </label>
+                                        <?php
+                                        $all_groups = ['Yamazaki Staff', 'Admin TSC', 'Operasional TSC', 'TSF Staff', 'Sinar Boga Staff', 'Rorotan Staff'];
+                                        $show_groups = ($allowed_groups === null) ? $all_groups : $allowed_groups;
+                                        $selected_groups_view = $selected_groups ?? [];
+                                        ?>
+                                        <select name="group[]" id="filterGroup" class="form-select form-select-sm"
+                                            multiple="multiple" <?= ($locked_group && count($allowed_groups ?? []) <= 1) ? 'disabled' : '' ?>>
+                                            <?php foreach ($show_groups as $g): ?>
+                                                <option value="<?= $g ?>" <?= in_array($g, $selected_groups_view) ? 'selected' : '' ?>><?= $g ?></option>
                                             <?php endforeach ?>
                                         </select>
+                                        <?php if (!($locked_group && count($allowed_groups ?? []) <= 1)): ?>
+                                            <div class="mt-1 d-flex gap-1">
+                                                <button type="button" class="btn btn-outline-light btn-sm"
+                                                    style="font-size:.68rem;padding:1px 7px"
+                                                    onclick="$('#filterGroup').val(null).trigger('change')">
+                                                    <i class="fas fa-times me-1"></i>Clear
+                                                </button>
+                                                <button type="button" class="btn btn-outline-light btn-sm"
+                                                    style="font-size:.68rem;padding:1px 7px"
+                                                    onclick="$('#filterGroup').find('option').prop('selected', true).end().trigger('change')">
+                                                    <i class="fas fa-check-double me-1"></i>Semua
+                                                </button>
+                                            </div>
+                                        <?php endif ?>
                                     </div>
                                     <?php if ($is_admin): ?>
                                         <div class="col-md-2">
@@ -390,13 +460,23 @@
                                             </select>
                                         </div>
                                     <?php endif ?>
-                                    <div class="col-md-2">
+                                    <div class="col-md-1">
                                         <label class="text-white small d-block">&nbsp;</label>
                                         <button type="submit" class="btn btn-light btn-sm w-100">
                                             <i class="fas fa-search"></i> Filter
                                         </button>
                                     </div>
                                 </div>
+                                <?php if (!empty($selected_groups)): ?>
+                                    <div class="mt-2 d-flex flex-wrap gap-1 align-items-center">
+                                        <small class="text-white-50 me-1">Group aktif:</small>
+                                        <?php foreach ($selected_groups as $g): ?>
+                                            <span class="badge bg-light text-dark" style="font-size:.7rem">
+                                                <i class="fas fa-layer-group me-1"></i><?= htmlspecialchars($g) ?>
+                                            </span>
+                                        <?php endforeach ?>
+                                    </div>
+                                <?php endif ?>
                             </form>
                         </div>
                     </div>
@@ -454,28 +534,72 @@
     </div>
 
     <?php $this->load->view('partials/js') ?>
+    <!-- Select2 -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(document).ready(function () {
 
             setTimeout(() => $('.alert').fadeOut('slow'), 5000);
 
+            // ══════════════════════════════════════════
+            // Init Select2 multi-select Group
+            // ══════════════════════════════════════════
+            $('#filterGroup').select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Semua Group',
+                allowClear: true,
+                width: '100%',
+                language: {
+                    noResults: function () { return 'Group tidak ditemukan'; },
+                    removeAllItems: function () { return 'Hapus semua'; }
+                }
+            });
+
+            // Sync badge jumlah dipilih real-time
+            $('#filterGroup').on('change', function () {
+                const count = $(this).val() ? $(this).val().length : 0;
+                const $label = $(this).closest('.col-md-3').find('label .badge');
+                if (count > 0) {
+                    if ($label.length) {
+                        $label.text(count + ' dipilih');
+                    } else {
+                        $(this).closest('.col-md-3').find('label').append(
+                            '<span class="badge bg-light text-dark active-filter-badge ms-1">' + count + ' dipilih</span>'
+                        );
+                    }
+                } else {
+                    $label.remove();
+                }
+            });
+
             <?php if ($is_admin): ?>
                 $('#filterUser').on('change', function () {
                     const hasUser = $(this).val() !== '';
                     $('#filterGroup').prop('disabled', hasUser);
-                    if (hasUser) $('#filterGroup').val('');
+                    if (hasUser) $('#filterGroup').val(null).trigger('change');
                 });
                 if ($('#filterUser').val()) $('#filterGroup').prop('disabled', true);
             <?php endif ?>
 
+            // Group yang aktif difilter saat halaman dimuat (dari PHP).
+            // Setelah ini, ambil live dari Select2 tiap kali dipakai —
+            // supaya kalau user ganti pilihan tanpa submit form dulu
+            // (mis. langsung export atau ketika DataTables reload), tetap sinkron.
+            function getSelectedGroups() {
+                const val = $('#filterGroup').val();
+                return val ? val : [];
+            }
+
             const ajaxParams = {
                 start_date: '<?= $start_date ?>',
                 end_date: '<?= $end_date ?>',
-                group: '<?= addslashes($selected_group ?? '') ?>',
                 user_id: '<?= $selected_user_id ?? '' ?>',
                 tipe: '<?= addslashes($this->input->get('tipe') ?? '') ?>'
             };
+
+            // Flag superadmin dari PHP, dipakai di kolom Aksi
+            const isSuperadmin = <?= $is_superadmin ? 'true' : 'false' ?>;
 
             const table = $('#dataTable').DataTable({
                 processing: true,
@@ -484,7 +608,12 @@
                 ajax: {
                     url: '<?= base_url('absensi/laporan_data') ?>',
                     type: 'GET',
-                    data: d => Object.assign(d, ajaxParams),
+                    data: function (d) {
+                        Object.assign(d, ajaxParams);
+                        // kirim group sebagai array group[]=A&group[]=B
+                        d.group = getSelectedGroups();
+                        return d;
+                    },
                     error: function (xhr, err) {
                         console.error('DataTables ajax error:', err);
                     }
@@ -555,43 +684,53 @@
                         }
                     },
                     // 9 Aksi — tidak bisa di-sort
+                    // Detail selalu tampil untuk admin. Edit & Hapus HANYA untuk superadmin.
                     {
                         data: null,
                         orderable: false,
                         className: 'text-center',
-                        render: (d, t, r) => `
-                            <div class="btn-group-vertical">
+                        render: (d, t, r) => {
+                            let html = `<div class="btn-group-vertical">
                                 <a href="<?= base_url('absensi/detail/') ?>${r.id}" class="btn btn-sm btn-info mb-1">
                                     <i class="fas fa-eye"></i> Detail
-                                </a>
+                                </a>`;
+
+                            if (isSuperadmin) {
+                                html += `
                                 <a href="<?= base_url('absensi/edit/') ?>${r.id}" class="btn btn-sm btn-warning mb-1">
                                     <i class="fas fa-edit"></i> Edit
                                 </a>
                                 <button class="btn btn-sm btn-danger btn-delete" data-id="${r.id}" data-nama="${r.user_nama}">
                                     <i class="fas fa-trash"></i> Hapus
-                                </button>
-                            </div>`
+                                </button>`;
+                            }
+
+                            html += `</div>`;
+                            return html;
+                        }
                     }
                 ],
                 drawCallback: function (settings) {
-                    $('.btn-delete').off('click').on('click', function () {
-                        const id = $(this).data('id');
-                        const nama = $(this).data('nama');
-                        Swal.fire({
-                            title: 'Hapus Data Absensi?',
-                            html: `Data absensi dari <strong>${nama}</strong> akan dihapus permanen!`,
-                            icon: 'warning',
-                            showCancelButton: true,
-                            confirmButtonColor: '#d33',
-                            cancelButtonColor: '#3085d6',
-                            confirmButtonText: '<i class="fas fa-trash"></i> Ya, Hapus',
-                            cancelButtonText: 'Batal',
-                            reverseButtons: true
-                        }).then(result => {
-                            if (result.isConfirmed)
-                                window.location.href = '<?= base_url('absensi/delete/') ?>' + id;
+                    if (isSuperadmin) {
+                        $('.btn-delete').off('click').on('click', function () {
+                            const id = $(this).data('id');
+                            const nama = $(this).data('nama');
+                            Swal.fire({
+                                title: 'Hapus Data Absensi?',
+                                html: `Data absensi dari <strong>${nama}</strong> akan dihapus permanen!`,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor: '#d33',
+                                cancelButtonColor: '#3085d6',
+                                confirmButtonText: '<i class="fas fa-trash"></i> Ya, Hapus',
+                                cancelButtonText: 'Batal',
+                                reverseButtons: true
+                            }).then(result => {
+                                if (result.isConfirmed)
+                                    window.location.href = '<?= base_url('absensi/delete/') ?>' + id;
+                            });
                         });
-                    });
+                    }
 
                     const api = this.api();
                     const info = api.page.info();
@@ -603,10 +742,17 @@
                 }
             });
 
-            // Export Excel
+            // Export Excel — ikut filter aktif di halaman (start/end date, tipe,
+            // user_id, dan group[] yang sedang dipilih), bukan sekadar query string awal.
             $('#btn-export').on('click', function () {
-                window.location.href = '<?= base_url('absensi/export_excel') ?>?' +
-                    new URLSearchParams(window.location.search).toString();
+                const params = new URLSearchParams();
+                params.set('start_date', ajaxParams.start_date);
+                params.set('end_date', ajaxParams.end_date);
+                if (ajaxParams.user_id) params.set('user_id', ajaxParams.user_id);
+                if (ajaxParams.tipe) params.set('tipe', ajaxParams.tipe);
+                getSelectedGroups().forEach(g => params.append('group[]', g));
+
+                window.location.href = '<?= base_url('absensi/export_excel') ?>?' + params.toString();
             });
 
             // Today count

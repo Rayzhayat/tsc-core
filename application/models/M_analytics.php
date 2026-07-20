@@ -66,6 +66,13 @@ class M_analytics extends CI_Model
         return strtoupper(trim($val));
     }
 
+    // ── Helper: normalisasi nopol (uppercase + hapus semua spasi) ──
+    private function _normalize_nopol($val)
+    {
+        $val = strtoupper(trim($val ?? ''));
+        return preg_replace('/[^A-Z0-9]/', '', $val);
+    }
+
     // ── Helper: hitung margin sementara ──
     // Formula: Rate User-TSC - Rate TSC-Vendor
     // Rate TSC-Vendor = Trip Cost to Vendor + Biaya Lain Vendor + PPH (kalau Rate TSC-Vendor kosong)
@@ -311,6 +318,7 @@ class M_analytics extends CI_Model
             'truck_type' => trim($map['Truck Type'] ?? ''),
             'start_date' => $this->_parse_date($map['Start Date SKO'] ?? $map['Start Date'] ?? ''),
             'vendor' => trim($map['Vendor'] ?? ''),
+            'nopol' => $this->_normalize_nopol($map['Nopol'] ?? ''),
             'driver' => trim($map['Driver'] ?? ''),
             'status' => trim($map['Status'] ?? ''),
             'trip_cost_from_user' => $this->_parse_number($map['Trip Cost from User'] ?? 0),
@@ -350,6 +358,7 @@ class M_analytics extends CI_Model
             'truck_type' => trim($map['Truck Type'] ?? ''),
             'start_date' => $this->_parse_date($map['Start Date SKO'] ?? ''),
             'vendor' => trim($map['Vendor'] ?? ''),
+            'nopol' => $this->_normalize_nopol($map['Nopol'] ?? ''),
             'driver' => trim($map['Driver'] ?? ''),
             'status' => trim($map['Status'] ?? ''),
             'trip_cost_from_user' => $this->_parse_number($map['Trip Cost from User'] ?? 0),
@@ -416,6 +425,7 @@ class M_analytics extends CI_Model
             'truck_type' => trim($map['Truck Type'] ?? ''),
             'start_date' => $this->_parse_date($map['Start Date SKO'] ?? ''),
             'vendor' => trim($map['Vendor'] ?? ''),
+            'nopol' => $this->_normalize_nopol($map['Nopol'] ?? ''),
             'driver' => trim($map['Driver'] ?? ''),
             'status' => $status,
             'trip_cost_from_user' => $this->_parse_number($map['Trip Cost from User'] ?? 0),
@@ -481,6 +491,7 @@ class M_analytics extends CI_Model
             'truck_type' => trim($map['Truck Type'] ?? ''),
             'start_date' => $this->_parse_date($map['Start Date SKO'] ?? ''),
             'vendor' => trim($map['Vendor'] ?? ''),
+            'nopol' => $this->_normalize_nopol($map['Nopol'] ?? ''),
             'driver' => trim($map['Driver'] ?? ''),
             'status' => $raw_status,
             'trip_cost_from_user' => $trip_cost_from_user,
@@ -545,6 +556,7 @@ class M_analytics extends CI_Model
             'start_date' => $this->_parse_date($map['Start Date'] ?? $map['Start Date SKO'] ?? ''),
             'end_date' => null,
             'vendor' => $vendor,
+            'nopol' => $this->_normalize_nopol($map['Nopol'] ?? ''),
             'driver' => trim($map['Driver'] ?? ''),
             'status' => $status,
             'trip_cost_from_user' => $trip_cost_from_user,
@@ -585,6 +597,7 @@ class M_analytics extends CI_Model
             'start_date' => $this->_parse_date($map['Start Date'] ?? ''),
             'end_date' => $this->_parse_date($map['End Date'] ?? ''),
             'vendor' => trim($map['Vendor'] ?? ''),
+            'nopol' => $this->_normalize_nopol($map['Nopol'] ?? ''),
             'driver' => trim($map['DRIVER'] ?? $map['Driver'] ?? ''),
             'status' => 'DONE',
             'trip_cost_from_user' => $this->_parse_number($map['Trip Cost from User'] ?? 0),
@@ -607,6 +620,62 @@ class M_analytics extends CI_Model
     // ════════════════════════════════════════════════════════════
     // ANALYTICS QUERIES
     // ════════════════════════════════════════════════════════════
+
+    // ────────────────────────────────────────────────
+// REKAP: Margin per Nopol (Unit Internal / OWN UNIT)
+// ────────────────────────────────────────────────
+    public function margin_unit_internal_summary($filters = [])
+    {
+        $this->db->select('
+        COUNT(*) as total_trip,
+        COUNT(DISTINCT nopol) as total_unit,
+        SUM(trip_cost_from_user) as total_revenue,
+        SUM(margin) as total_margin,
+        ROUND(SUM(margin) / NULLIF(SUM(trip_cost_from_user), 0) * 100, 2) as margin_pct
+    ');
+        $this->db->from('tb_monitoring_shipment');
+        $this->db->where('UPPER(vendor)', 'OWN UNIT');
+        $this->_apply_filters($filters);
+        return $this->db->get()->row();
+    }
+
+    public function margin_per_nopol($filters = [])
+    {
+        $this->db->select('
+        nopol,
+        COUNT(*) as total_trip,
+        COUNT(DISTINCT customer) as total_customer,
+        GROUP_CONCAT(DISTINCT customer ORDER BY customer SEPARATOR ", ") as customer_dilayani,
+        GROUP_CONCAT(DISTINCT truck_type ORDER BY truck_type SEPARATOR ", ") as truck_types,
+        SUM(trip_cost_from_user) as total_revenue,
+        SUM(margin) as total_margin,
+        ROUND(AVG(margin), 0) as avg_margin,
+        ROUND(SUM(margin) / NULLIF(SUM(trip_cost_from_user), 0) * 100, 2) as margin_pct
+    ');
+        $this->db->from('tb_monitoring_shipment');
+        $this->db->where('UPPER(vendor)', 'OWN UNIT');
+        $this->db->where('nopol !=', '');
+        $this->_apply_filters($filters);
+        $this->db->group_by('nopol');
+        $this->db->order_by('total_margin', 'DESC');
+        return $this->db->get()->result();
+    }
+
+    // Trip-trip dari unit internal yang nopolnya kosong (perlu dibersihkan datanya)
+    public function unit_internal_nopol_kosong($filters = [])
+    {
+        $this->db->select('id, sheet_type, periode, start_date, customer, origin, dest_1,
+        truck_type, trip_cost_from_user, margin');
+        $this->db->from('tb_monitoring_shipment');
+        $this->db->where('UPPER(vendor)', 'OWN UNIT');
+        $this->db->group_start();
+        $this->db->where('nopol', '');
+        $this->db->or_where('nopol IS NULL');
+        $this->db->group_end();
+        $this->_apply_filters($filters);
+        $this->db->order_by('start_date', 'DESC');
+        return $this->db->get()->result();
+    }
 
     private function _apply_filters($filters = [])
     {
@@ -662,19 +731,26 @@ class M_analytics extends CI_Model
 
     public function avg_shipment_per_bulan($filters = [])
     {
-        $sub = $this->db->select('customer, periode, COUNT(*) as shipment_count', false)
-            ->from('tb_monitoring_shipment')
-            ->where('customer !=', '');
-        if (!empty($filters['sheet_type']))
-            $sub->where('sheet_type', $filters['sheet_type']);
-        $subquery = $this->db->get_compiled_select();
-        $this->db->reset_query();
+        $sheet_where = '';
+        if (!empty($filters['sheet_type'])) {
+            $sheet_where = "AND sheet_type = " . $this->db->escape($filters['sheet_type']);
+        }
 
-        $this->db->select('customer, ROUND(AVG(shipment_count), 1) as avg_shipment, SUM(shipment_count) as total_shipment, COUNT(DISTINCT periode) as total_bulan');
-        $this->db->from("($subquery) as sub");
-        $this->db->group_by('customer');
-        $this->db->order_by('avg_shipment', 'DESC');
-        return $this->db->get()->result();
+        return $this->db->query("
+        SELECT
+            customer,
+            ROUND(AVG(shipment_count), 1) as avg_shipment,
+            SUM(shipment_count) as total_shipment,
+            COUNT(DISTINCT periode) as total_bulan
+        FROM (
+            SELECT customer, periode, COUNT(*) as shipment_count
+            FROM tb_monitoring_shipment
+            WHERE customer != '' {$sheet_where}
+            GROUP BY customer, periode
+        ) as sub
+        GROUP BY customer
+        ORDER BY avg_shipment DESC
+    ")->result();
     }
 
     public function get_weekly_summary($date_from, $date_to, $sheet_type = '')

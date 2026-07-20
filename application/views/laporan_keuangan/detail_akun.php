@@ -69,6 +69,10 @@
                             <i class="fas fa-chart-line text-primary"></i> <?= $title ?>
                         </h1>
                         <div>
+                            <a href="<?= base_url('laporan_keuangan/detail_akun_excel/' . $akun->id . '?start_date=' . $start_date . '&end_date=' . $end_date) ?>"
+                                class="btn btn-success btn-sm shadow-sm mr-2">
+                                <i class="fas fa-file-excel"></i> Export Excel
+                            </a>
                             <a href="<?= base_url('reconciliation?start_date=' . $start_date . '&end_date=' . $end_date) ?>"
                                 class="btn btn-warning btn-sm shadow-sm mr-2">
                                 <i class="fas fa-balance-scale"></i> Lihat Rekonsiliasi
