@@ -20,6 +20,10 @@ class Ftl_non_spx extends CI_Controller
     {
         parent::__construct();
 
+        // Pastikan helper log_activity() selalu tersedia di controller ini,
+        // walaupun belum sempat di-autoload global di application/config/autoload.php
+        $this->load->helper('audit');
+
         if (!$this->session->userdata('login')) {
             redirect('login');
         }
@@ -323,7 +327,7 @@ class Ftl_non_spx extends CI_Controller
             'no_shipment' => $this->input->post('no_shipment'),
             'customer_id' => $this->input->post('customer_id') ?: null,
             'origin' => $this->input->post('origin') ?: null,
-            'origin2' => $this->input->post('origin2') ?: null,
+            'origin2' => $this->input->post('origin2') ?: null,   // ← BARU
             'dest1' => $this->input->post('dest1') ?: null,
             'dest2' => $this->input->post('dest2') ?: null,
             'truck_type' => $this->input->post('truck_type') ?: null,
@@ -399,7 +403,7 @@ class Ftl_non_spx extends CI_Controller
             'no_shipment' => $this->input->post('no_shipment'),
             'customer_id' => $this->input->post('customer_id') ?: null,
             'origin' => $this->input->post('origin') ?: null,
-            'origin2' => $this->input->post('origin2') ?: null,
+            'origin2' => $this->input->post('origin2') ?: null,   // ← BARU
             'dest1' => $this->input->post('dest1') ?: null,
             'dest2' => $this->input->post('dest2') ?: null,
             'truck_type' => $this->input->post('truck_type') ?: null,
@@ -1118,6 +1122,15 @@ class Ftl_non_spx extends CI_Controller
                 ];
 
                 if ($this->M_ftl_non_spx->tambah($data)) {
+                    $new_id = $this->db->insert_id();
+                    log_activity(
+                        'ftl_non_spx',
+                        'create',
+                        $new_id,
+                        'Import shipment ' . $data['no_shipment'] . ' (' . $data['origin'] . ' → ' . $data['dest1'] . ')',
+                        null,
+                        $data
+                    );
                     $success_count++;
                 } else {
                     $failed_count++;

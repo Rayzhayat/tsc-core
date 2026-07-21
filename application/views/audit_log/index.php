@@ -38,14 +38,16 @@
                     <?php $s = $summary; ?>
                     <div class="row g-3 mb-4">
                         <div class="col-xl-3 col-md-6">
-                            <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #4e73df !important;">
+                            <div class="card border-0 shadow-sm h-100"
+                                style="border-left: 4px solid #4e73df !important;">
                                 <div class="card-body d-flex align-items-center gap-3 py-3">
                                     <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                                         style="width:46px;height:46px;background:rgba(78,115,223,.15)">
+                                        style="width:46px;height:46px;background:rgba(78,115,223,.15)">
                                         <i class="fas fa-list text-primary fs-5"></i>
                                     </div>
                                     <div>
-                                        <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.05em">
+                                        <div class="text-muted small fw-semibold text-uppercase"
+                                            style="font-size:.7rem;letter-spacing:.05em">
                                             Total Log
                                         </div>
                                         <div class="h4 mb-0 fw-bold"><?= number_format($s->total) ?></div>
@@ -55,14 +57,16 @@
                         </div>
 
                         <div class="col-xl-3 col-md-6">
-                            <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #1cc88a !important;">
+                            <div class="card border-0 shadow-sm h-100"
+                                style="border-left: 4px solid #1cc88a !important;">
                                 <div class="card-body d-flex align-items-center gap-3 py-3">
                                     <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                                         style="width:46px;height:46px;background:rgba(28,200,138,.15)">
+                                        style="width:46px;height:46px;background:rgba(28,200,138,.15)">
                                         <i class="fas fa-calendar-day text-success fs-5"></i>
                                     </div>
                                     <div>
-                                        <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.05em">
+                                        <div class="text-muted small fw-semibold text-uppercase"
+                                            style="font-size:.7rem;letter-spacing:.05em">
                                             Hari Ini
                                         </div>
                                         <div class="h4 mb-0 fw-bold text-success"><?= number_format($s->today) ?></div>
@@ -72,34 +76,40 @@
                         </div>
 
                         <div class="col-xl-3 col-md-6">
-                            <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #e74a3b !important;">
+                            <div class="card border-0 shadow-sm h-100"
+                                style="border-left: 4px solid #e74a3b !important;">
                                 <div class="card-body d-flex align-items-center gap-3 py-3">
                                     <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                                         style="width:46px;height:46px;background:rgba(231,74,59,.15)">
+                                        style="width:46px;height:46px;background:rgba(231,74,59,.15)">
                                         <i class="fas fa-trash text-danger fs-5"></i>
                                     </div>
                                     <div>
-                                        <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.05em">
+                                        <div class="text-muted small fw-semibold text-uppercase"
+                                            style="font-size:.7rem;letter-spacing:.05em">
                                             Total Delete
                                         </div>
-                                        <div class="h4 mb-0 fw-bold text-danger"><?= number_format($s->delete_count) ?></div>
+                                        <div class="h4 mb-0 fw-bold text-danger"><?= number_format($s->delete_count) ?>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="col-xl-3 col-md-6">
-                            <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #f6c23e !important;">
+                            <div class="card border-0 shadow-sm h-100"
+                                style="border-left: 4px solid #f6c23e !important;">
                                 <div class="card-body d-flex align-items-center gap-3 py-3">
                                     <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                                         style="width:46px;height:46px;background:rgba(246,194,62,.15)">
+                                        style="width:46px;height:46px;background:rgba(246,194,62,.15)">
                                         <i class="fas fa-users text-warning fs-5"></i>
                                     </div>
                                     <div>
-                                        <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.05em">
+                                        <div class="text-muted small fw-semibold text-uppercase"
+                                            style="font-size:.7rem;letter-spacing:.05em">
                                             Active User (7 hari)
                                         </div>
-                                        <div class="h4 mb-0 fw-bold text-warning"><?= number_format($s->active_users) ?></div>
+                                        <div class="h4 mb-0 fw-bold text-warning"><?= number_format($s->active_users) ?>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -149,13 +159,13 @@
                                 <div class="col-md-2 col-6">
                                     <label class="form-label small mb-1 fw-semibold">Dari</label>
                                     <input type="date" id="f_date_from" class="form-control form-control-sm"
-                                           value="<?= $filters['date_from'] ?>">
+                                        value="<?= $filters['date_from'] ?>">
                                 </div>
 
                                 <div class="col-md-2 col-6">
                                     <label class="form-label small mb-1 fw-semibold">Sampai</label>
                                     <input type="date" id="f_date_to" class="form-control form-control-sm"
-                                           value="<?= $filters['date_to'] ?>">
+                                        value="<?= $filters['date_to'] ?>">
                                 </div>
 
                                 <div class="col-md-2 col-6">
@@ -217,11 +227,13 @@
                     <div class="row">
                         <div class="col-6">
                             <h6 class="text-danger">Data Sebelum</h6>
-                            <pre id="detailLama" class="bg-light p-2 rounded small" style="white-space:pre-wrap"></pre>
+                            <pre id="detailLama" class="bg-light p-2 rounded small"
+                                style="white-space:pre-wrap; color:#212529 !important;"></pre>
                         </div>
                         <div class="col-6">
                             <h6 class="text-success">Data Sesudah</h6>
-                            <pre id="detailBaru" class="bg-light p-2 rounded small" style="white-space:pre-wrap"></pre>
+                            <pre id="detailBaru" class="bg-light p-2 rounded small"
+                                style="white-space:pre-wrap; color:#212529 !important;"></pre>
                         </div>
                     </div>
                 </div>
